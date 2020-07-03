@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-using UnityEngine;
+﻿using UnityEngine;
 
 
 public static class Extensions
@@ -51,34 +49,28 @@ public static class Extensions
     // World Pos To Internal Pos
     public static Vector3Int WorldPosToInternalPos(this Vector3Int worldPos)
     {
-        Vector3Int internalPos = new Vector3Int(worldPos.x / GameManager.Instance.ChunkSize, worldPos.y / GameManager.Instance.ChunkSize, worldPos.z / GameManager.Instance.ChunkSize);
-        if(worldPos.x < 0)
+        Vector3Int worldPosDifference = new Vector3Int(worldPos.x / GameManager.Instance.ChunkSize, worldPos.y / GameManager.Instance.ChunkSize, worldPos.z / GameManager.Instance.ChunkSize);
+        if(worldPos.x < 0 && worldPos.x % GameManager.Instance.ChunkSize < 0)
         {
-            if(worldPos.x % GameManager.Instance.ChunkSize < 0)
-            {
-                internalPos.x -= 1;
-            }
+            worldPosDifference.x -= 1;
         }
-        internalPos.x *= GameManager.Instance.ChunkSize;
-        if(worldPos.y < 0)
+        worldPosDifference.x *= GameManager.Instance.ChunkSize;
+        if(worldPos.y < 0 && worldPos.y % GameManager.Instance.ChunkSize < 0)
         {
-            if(worldPos.y % GameManager.Instance.ChunkSize < 0)
-            {
-                internalPos.y -= 1;
-            }
+            worldPosDifference.y -= 1;
         }
-        internalPos.y *= GameManager.Instance.ChunkSize;
-        if(worldPos.z < 0)
+        worldPosDifference.y *= GameManager.Instance.ChunkSize;
+        if(worldPos.z < 0 && worldPos.z % GameManager.Instance.ChunkSize < 0)
         {
-            if(worldPos.z % GameManager.Instance.ChunkSize < 0)
-            {
-                internalPos.z -= 1;
-            }
+            worldPosDifference.z -= 1;
         }
-        internalPos.z *= GameManager.Instance.ChunkSize;
-        internalPos.x = worldPos.x - internalPos.x;
-        internalPos.y = worldPos.y - internalPos.y;
-        internalPos.z = worldPos.z - internalPos.z;
+        worldPosDifference.z *= GameManager.Instance.ChunkSize;
+        Vector3Int internalPos = new Vector3Int
+        {
+            x = worldPos.x - worldPosDifference.x,
+            y = worldPos.y - worldPosDifference.y,
+            z = worldPos.z - worldPosDifference.z
+        };
         return internalPos;
     }
 

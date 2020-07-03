@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.33371308, g: 0.4997731, b: 0.8330084, a: 1}
+  m_IndirectSpecularColor: {r: 1.6660168, g: 1.6660168, b: 1.6660168, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -258,7 +258,6 @@ GameObject:
   m_Component:
   - component: {fileID: 467869125}
   - component: {fileID: 467869126}
-  - component: {fileID: 467869127}
   m_Layer: 0
   m_Name: Fog Volume
   m_TagString: Untagged
@@ -292,24 +291,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isGlobal: 0
+  isGlobal: 1
   priority: 0
-  blendDistance: 32
+  blendDistance: 0
   weight: 1
   sharedProfile: {fileID: 11400000, guid: f7af56c8ba58ba7439fb9dd95a46936c, type: 2}
---- !u!65 &467869127
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 467869124}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 32, y: 32, z: 32}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &859644678
 GameObject:
   m_ObjectHideFlags: 0
@@ -341,25 +327,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ChunkParentGO: {fileID: 2127720670}
   ChunkMaterial: {fileID: 2100000, guid: e4bf7dc95b052a24c821d206d0bb6784, type: 2}
+  ChunkSize: 16
+  StartingChunkArea: 4
   TerrainSurfaceCutoff: 0.5
-  ChunkSize: 32
   SmoothTerrain: 0
-  StartingChunkArea: 5
   Seed: 0
   NoiseType: 3
-  NoiseInterpolation: 2
+  NoiseInterpolation: 0
   FractalType: 0
+  Frequency: 0.009
   Octaves: 4
-  Frequency: 0.015
-  Lacunarity: 3
-  Persistence: 0.4
+  Lacunarity: 4
+  Persistence: 0.2
   Multiplier: 1
-  CaveWormNoiseType: 2
-  CaveWormNoiseInterpolation: 0
-  CaveWormFrequency: 0.5
-  MinimumCaveWorms: 0
+  ShouldCarveWorms: 1
+  CaveWormPositionNoiseType: 7
+  CaveWormPositionNoiseInterpolation: 0
+  CaveWormPositionFrequency: 1
+  CaveWormDirectionNoiseType: 2
+  CaveWormDirectionNoiseInterpolation: 0
+  CaveWormDirectionFrequency: 0.1
+  MinimumCaveWorms: 1
   MaximumCaveWorms: 2
-  MaxWormChunkDistance: 4
+  MaxWormChunkDistance: 3
+  MaxWormNodes: 50
+  CaveWormRadius: 3
+  CaveWormCarveValue: 2
 --- !u!4 &859644680
 Transform:
   m_ObjectHideFlags: 0

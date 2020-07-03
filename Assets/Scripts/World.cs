@@ -6,7 +6,6 @@ using UnityEngine;
 public static class World
 {
     public static Dictionary<Vector3Int, Chunk> Chunks = new Dictionary<Vector3Int, Chunk>();
-    public static List<Chunk> ChunksToUnload = new List<Chunk>();
 
 
     // Awake is called when the script instance is being loaded.
@@ -33,12 +32,28 @@ public static class World
 
     }
 
-    // Remesh Chunks
-    public static void RemeshChunks()
+    // Regenerate Starting Chunks
+    public static void RegenerateStartingChunks()
     {
         foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
         {
-            chunk.Value.RemeshChunk();
+            GameObject.Destroy(chunk.Value.ChunkGO);
+        }
+        Chunks.Clear();
+        GenerateStartingChunks();
+    }
+
+    public static bool GetChunk(Vector3Int chunkPos, out Chunk chunk)
+    {
+        if(Chunks.ContainsKey(chunkPos))
+        {
+            chunk = Chunks[chunkPos];
+            return true;
+        }
+        else
+        {
+            chunk = null;
+            return false;
         }
     }
 
@@ -112,11 +127,7 @@ public static class World
                 {
                     foreach(Vector3Int node in worm.Nodes)
                     {
-                        if(Chunks.ContainsKey(node.WorldPosToChunkPos()) == true)
-                        {
-                            Chunk chunkOfNode = Chunks[node.WorldPosToChunkPos()];
-                            chunkOfNode.CarveCaveWorm(node, worm.Radius);
-                        }
+                        CarveCave(node, worm.Radius);
                     }
                 }
             }
@@ -132,5 +143,27 @@ public static class World
             }
         }
         Debug.Log("Successfully Generated GameObjects and Meshes for Starting Chunks!");
+    }
+
+    // Carve Cave Worm
+    private static void CarveCave(Vector3Int worldPos, int radius)
+    {
+        for(int x = worldPos.x - radius; x < worldPos.x + radius; x++)
+        {
+            for(int y = worldPos.y - radius; y < worldPos.y + radius; y++)
+            {
+                for(int z = worldPos.z - radius; z < worldPos.z + radius; z++)
+                {
+                    Vector3Int nextPos = new Vector3Int(x, y, z);
+                    float distance = Vector3Int.Distance(nextPos, worldPos);
+                    if(distance <= radius && GetChunk(nextPos.WorldPosToChunkPos(), out Chunk chunk) == true && chunk.GeneratedChunkData == true)
+                    {
+                        Vector3Int internalPos = nextPos.WorldPosToInternalPos();
+                        float value = Mathf.SmoothStep(GameManager.Instance.CaveWormCarveValue, 0f, distance / radius);
+                        chunk.ModifyTerrainMap(internalPos, value, true);
+                    }
+                }
+            }
+        }
     }
 }

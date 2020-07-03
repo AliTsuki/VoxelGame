@@ -1,19 +1,25 @@
 ﻿using UnityEditor;
+using UnityEditor.SceneManagement;
 
 using UnityEngine;
 
 
-[CustomEditor(typeof(GameManager))]
+[CustomEditor(typeof(GameManager)), System.Serializable]
 public class GameManagerEditor : Editor
 {
     private GameManager gm;
 
 
+    // OnEnable is called when the object is enabled and becomes active.
+    public void OnEnable()
+    {
+		this.gm = (GameManager)this.target;
+	}
+
     // OnInspectorGUI is called every time the custom inspector window is modified.
     public override void OnInspectorGUI()
     {
         this.serializedObject.Update();
-        this.gm = (GameManager)this.target;
 		GUIStyle BoldCenteredStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, };
 		// References
 		EditorGUILayout.LabelField("References", BoldCenteredStyle);
@@ -43,19 +49,31 @@ public class GameManagerEditor : Editor
 		EditorGUILayout.Space();
 		EditorGUILayout.LabelField("Cave Worm Noise Settings", BoldCenteredStyle);
 		this.gm.ShouldCarveWorms = EditorGUILayout.Toggle("Should Carve Worms?:", this.gm.ShouldCarveWorms);
-		this.gm.CaveWormNoiseType = (FastNoise.NoiseType)EditorGUILayout.EnumPopup("Cave Worm Noise Type:", this.gm.CaveWormNoiseType);
-		this.gm.CaveWormNoiseInterpolation = (FastNoise.Interp)EditorGUILayout.EnumPopup("Cave Worm Noise Interpolation:", this.gm.CaveWormNoiseInterpolation);
-		this.gm.CaveWormFrequency = EditorGUILayout.FloatField("Cave Worm Frequency:", this.gm.CaveWormFrequency);
+		EditorGUILayout.LabelField("Position Noise Map", EditorStyles.boldLabel);
+		this.gm.CaveWormPositionNoiseType = (FastNoise.NoiseType)EditorGUILayout.EnumPopup("Cave Worm Pos Noise Type:", this.gm.CaveWormPositionNoiseType);
+		this.gm.CaveWormPositionNoiseInterpolation = (FastNoise.Interp)EditorGUILayout.EnumPopup("Cave Worm Pos Noise Interpolation:", this.gm.CaveWormPositionNoiseInterpolation);
+		this.gm.CaveWormPositionFrequency = EditorGUILayout.FloatField("Cave Worm Pos Frequency:", this.gm.CaveWormPositionFrequency);
+		EditorGUILayout.LabelField("Direction Noise Map", EditorStyles.boldLabel);
+		this.gm.CaveWormDirectionNoiseType = (FastNoise.NoiseType)EditorGUILayout.EnumPopup("Cave Worm Dir Noise Type:", this.gm.CaveWormDirectionNoiseType);
+		this.gm.CaveWormDirectionNoiseInterpolation = (FastNoise.Interp)EditorGUILayout.EnumPopup("Cave Worm Dir Noise Interpolation:", this.gm.CaveWormDirectionNoiseInterpolation);
+		this.gm.CaveWormDirectionFrequency = EditorGUILayout.FloatField("Cave Worm Dir Frequency:", this.gm.CaveWormDirectionFrequency);
+		EditorGUILayout.LabelField("Number, Length, Radius, Values", EditorStyles.boldLabel);
 		this.gm.MinimumCaveWorms = EditorGUILayout.IntField("Minimum Cave Worms:", this.gm.MinimumCaveWorms);
 		this.gm.MaximumCaveWorms = EditorGUILayout.IntField("Maximum Cave Worms:", this.gm.MaximumCaveWorms);
 		this.gm.MaxWormChunkDistance = EditorGUILayout.IntField("Maximum Worm Chunk Distance:", this.gm.MaxWormChunkDistance);
 		this.gm.MaxWormNodes = EditorGUILayout.IntField("Maximum Worm Nodes:", this.gm.MaxWormNodes);
 		this.gm.CaveWormRadius = EditorGUILayout.IntField("Cave Worm Radius:", this.gm.CaveWormRadius);
-		// Remesh Button
+		this.gm.CaveWormCarveValue = EditorGUILayout.FloatField("Cave Worm Carve Value:", this.gm.CaveWormCarveValue);
+		// Regenerate Button
 		EditorGUILayout.Space();
-		if(GUILayout.Button("Remesh Current Chunks"))
+		if(GUILayout.Button("Regenerate Starting Chunks"))
 		{
-			GameManager.Instance.RemeshChunks();
+			GameManager.Instance.RegenerateStartingChunks();
+		}
+		if(GUI.changed)
+		{
+			EditorUtility.SetDirty(this.gm);
+			EditorSceneManager.MarkSceneDirty(this.gm.gameObject.scene);
 		}
 	}
 }

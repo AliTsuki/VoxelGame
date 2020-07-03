@@ -21,18 +21,16 @@ public class CaveWorm
     public void GenerateNodes()
     {
         int dirOffset = -1000;
-        int currentNode = 0;
-        while(this.Nodes.Count < GameManager.Instance.MaxWormNodes)
+        for(int currentNode = 0; currentNode < GameManager.Instance.MaxWormNodes - 1; currentNode++)
         {
-            int dirX = Mathf.RoundToInt(GameManager.Instance.CaveWormNoiseGenerator.GetNoise(this.Nodes[currentNode].x + dirOffset, this.Nodes[currentNode].y + dirOffset, this.Nodes[currentNode].z + dirOffset));
-            int dirY = Mathf.RoundToInt(GameManager.Instance.CaveWormNoiseGenerator.GetNoise(this.Nodes[currentNode].x + dirOffset, this.Nodes[currentNode].y + dirOffset, this.Nodes[currentNode].z + dirOffset));
-            int dirZ = Mathf.RoundToInt(GameManager.Instance.CaveWormNoiseGenerator.GetNoise(this.Nodes[currentNode].x + dirOffset, this.Nodes[currentNode].y + dirOffset, this.Nodes[currentNode].z + dirOffset));
+            float dirX = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Nodes[currentNode].x + (dirOffset * 1), this.Nodes[currentNode].y + (dirOffset * 1), this.Nodes[currentNode].z + (dirOffset * 1));
+            float dirY = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Nodes[currentNode].x + (dirOffset * 2), this.Nodes[currentNode].y + (dirOffset * 2), this.Nodes[currentNode].z + (dirOffset * 2));
+            float dirZ = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Nodes[currentNode].x + (dirOffset * 3), this.Nodes[currentNode].y + (dirOffset * 3), this.Nodes[currentNode].z + (dirOffset * 3));
             Vector3 newWormDir = new Vector3(dirX, dirY, dirZ).normalized;
             Vector3Int newNodePos = (this.Nodes[currentNode] + (newWormDir * this.Radius)).RoundToInt();
             if(Vector3.Distance(this.Nodes[0], newNodePos) < GameManager.Instance.MaxWormChunkDistance * GameManager.Instance.ChunkSize)
             {
                 this.Nodes.Add(newNodePos);
-                currentNode++;
             }
             else
             {

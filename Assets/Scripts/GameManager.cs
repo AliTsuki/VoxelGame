@@ -286,12 +286,12 @@ public class GameManager : MonoBehaviour
 		{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 		{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 	};
-	
+
 	// Values
-	public float TerrainSurfaceCutoff = 0.5f;
 	public int ChunkSize = 32;
-	public bool SmoothTerrain = true;
 	public int StartingChunkArea = 5;
+	public float TerrainSurfaceCutoff = 0.5f;
+	public bool SmoothTerrain = true;
 
 	// Noise
 	public int Seed = 0;
@@ -307,15 +307,20 @@ public class GameManager : MonoBehaviour
 	public float Multiplier = 1f;
 	// Cave Worm Noise Generator
 	public bool ShouldCarveWorms = true;
-	public FastNoise CaveWormNoiseGenerator;
-	public FastNoise.NoiseType CaveWormNoiseType;
-	public FastNoise.Interp CaveWormNoiseInterpolation;
-	public float CaveWormFrequency = 0.5f;
+	public FastNoise CaveWormPositionNoiseGenerator;
+	public FastNoise.NoiseType CaveWormPositionNoiseType;
+	public FastNoise.Interp CaveWormPositionNoiseInterpolation;
+	public float CaveWormPositionFrequency = 0.5f;
+	public FastNoise CaveWormDirectionNoiseGenerator;
+	public FastNoise.NoiseType CaveWormDirectionNoiseType;
+	public FastNoise.Interp CaveWormDirectionNoiseInterpolation;
+	public float CaveWormDirectionFrequency = 0.5f;
 	public int MinimumCaveWorms = 0;
 	public int MaximumCaveWorms = 2;
 	public int MaxWormChunkDistance = 4;
 	public int MaxWormNodes = 50;
 	public int CaveWormRadius = 4;
+	public float CaveWormCarveValue = -1f;
 
 	// Flags
 	private bool hasGenerated = false;
@@ -324,7 +329,6 @@ public class GameManager : MonoBehaviour
 	private void Awake()
     {
 		Instance = this;
-        UnityEngine.Random.InitState(this.Seed);
 		this.UpdateNoiseGenerators();
 		World.Awake();
     }
@@ -348,13 +352,13 @@ public class GameManager : MonoBehaviour
 		World.FixedUpdate();
     }
 
-	// Remesh Chunks
-	public void RemeshChunks()
+	// Regenerate Starting Chunks
+	public void RegenerateStartingChunks()
 	{
 		if(this.hasGenerated == true)
         {
 			this.UpdateNoiseGenerators();
-			World.RemeshChunks();
+			World.RegenerateStartingChunks();
 		}
 	}
 
@@ -370,9 +374,13 @@ public class GameManager : MonoBehaviour
 		this.NoiseGenerator.SetFractalLacunarity(this.Lacunarity);
 		this.NoiseGenerator.SetFractalGain(this.Persistence);
 		// Cave Worms
-		this.CaveWormNoiseGenerator = new FastNoise(this.Seed);
-		this.CaveWormNoiseGenerator.SetNoiseType(this.CaveWormNoiseType);
-		this.CaveWormNoiseGenerator.SetInterp(this.CaveWormNoiseInterpolation);
-		this.CaveWormNoiseGenerator.SetFrequency(this.CaveWormFrequency);
+		this.CaveWormPositionNoiseGenerator = new FastNoise(this.Seed);
+		this.CaveWormPositionNoiseGenerator.SetNoiseType(this.CaveWormPositionNoiseType);
+		this.CaveWormPositionNoiseGenerator.SetInterp(this.CaveWormPositionNoiseInterpolation);
+		this.CaveWormPositionNoiseGenerator.SetFrequency(this.CaveWormPositionFrequency);
+		this.CaveWormDirectionNoiseGenerator = new FastNoise(this.Seed);
+		this.CaveWormDirectionNoiseGenerator.SetNoiseType(this.CaveWormDirectionNoiseType);
+		this.CaveWormDirectionNoiseGenerator.SetInterp(this.CaveWormDirectionNoiseInterpolation);
+		this.CaveWormDirectionNoiseGenerator.SetFrequency(this.CaveWormDirectionFrequency);
 	}
 }

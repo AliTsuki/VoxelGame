@@ -1,12 +1,25 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 using UnityEngine;
 
 
 public class Chunk
 {
+	[Flags]
+	private enum Neighbors
+    {
+		None = 0,
+		xNeg = 1,
+		xPos = 2,
+		yNeg = 4,
+		yPos = 8,
+		zNeg = 16,
+		zPos = 32
+    }
+
 	// GameObject Components
-	private GameObject chunkGO;
+	public GameObject ChunkGO { get; private set; }
 	private MeshFilter meshFilter;
 	private MeshRenderer meshRenderer;
 	private MeshCollider meshCollider;
@@ -38,12 +51,13 @@ public class Chunk
 	public void GenerateCaveWorms()
 	{
 		int posOffset = 1000;
-		int numWorms = 4;//Mathf.RoundToInt(GameManager.Instance.CaveWormNoiseGenerator.GetNoise(this.chunkPos.x, this.chunkPos.y, this.chunkPos.z).Map(-1, 1, GameManager.Instance.MinimumCaveWorms, GameManager.Instance.MaximumCaveWorms));
+		// TODO: Change number of worms to be based on noise and not the same value for every chunk
+		int numWorms = GameManager.Instance.MinimumCaveWorms;
 		for(int i = 0; i < numWorms; i++)
 		{
-			int posX = Mathf.RoundToInt(GameManager.Instance.CaveWormNoiseGenerator.GetNoise(this.chunkPos.x + (posOffset * i), this.chunkPos.y + (posOffset * i), this.chunkPos.z + (posOffset * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize));
-			int posY = Mathf.RoundToInt(GameManager.Instance.CaveWormNoiseGenerator.GetNoise(this.chunkPos.x + (posOffset * i), this.chunkPos.y + (posOffset * i), this.chunkPos.z + (posOffset * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize));
-			int posZ = Mathf.RoundToInt(GameManager.Instance.CaveWormNoiseGenerator.GetNoise(this.chunkPos.x + (posOffset * i), this.chunkPos.y + (posOffset * i), this.chunkPos.z + (posOffset * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize));
+			int posX = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise((this.chunkPos.x * this.chunkPos.x) + (posOffset * 1 * i), this.chunkPos.y + (posOffset * 1 * i), this.chunkPos.z + (posOffset * 1 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize + 1));
+			int posY = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise(this.chunkPos.x + (posOffset * 2 * i), (this.chunkPos.y * this.chunkPos.y) + (posOffset * 2 * i), this.chunkPos.z + (posOffset * 2 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize + 1));
+			int posZ = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise(this.chunkPos.x + (posOffset * 3 * i), this.chunkPos.y + (posOffset * 3 * i), (this.chunkPos.z * this.chunkPos.z) + (posOffset * 3 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize + 1));
 			Vector3Int newWormPos = new Vector3Int(posX, posY, posZ).InternalPosToWorldPos(this.chunkPos);
 			CaveWorm newWorm = new CaveWorm(newWormPos, GameManager.Instance.CaveWormRadius);
 			this.CaveWorms.Add(newWorm);
@@ -56,33 +70,108 @@ public class Chunk
 		this.PopulateTerrainMap();
 	}
 
-	// Carve Cave Worm
-	public void CarveCaveWorm(Vector3Int position, int radius)
-    {
-		Vector3Int internalPos = position.WorldPosToInternalPos();
-		if(this.GeneratedChunkData == true)
+	// Modify Terrain Map
+	public void ModifyTerrainMap(Vector3Int internalPos, float value, bool originalRequest)
+	{
+		this.terrainMap[internalPos.x, internalPos.y, internalPos.z] += value;
+		if(originalRequest == true)
         {
-			for(int x = internalPos.x - radius; x < internalPos.x + radius; x++)
-            {
-				for(int y = internalPos.y - radius; y < internalPos.y + radius; y++)
+			this.NotifyNeighbors(internalPos, value);
+		}
+	}
+
+	// Notify Neighbors
+	private void NotifyNeighbors(Vector3Int internalPos, float value)
+    {
+		// TODO: Seams still sometimes appearing, maybe drop notify neighbors method and replace with an edge copy method that averages the values for every edge location with neighboring chunk edges
+		// Check if this position is neighboring any other chunks, get how many/which directions
+		List<Neighbors> neighbors = new List<Neighbors>();
+		if(internalPos.x == 0)
+		{
+			neighbors.Add(Neighbors.xNeg);
+		}
+		else if(internalPos.x == GameManager.Instance.ChunkSize)
+		{
+			neighbors.Add(Neighbors.xPos);
+		}
+		if(internalPos.y == 0)
+		{
+			neighbors.Add(Neighbors.yNeg);
+		}
+		else if(internalPos.y == GameManager.Instance.ChunkSize)
+		{
+			neighbors.Add(Neighbors.yPos);
+		}
+		if(internalPos.z == 0)
+		{
+			neighbors.Add(Neighbors.zNeg);
+		}
+		else if(internalPos.z == GameManager.Instance.ChunkSize)
+		{
+			neighbors.Add(Neighbors.zPos);
+		}
+		// If on face (1): single neighbor (x), if on edge (2): triple neighbor (x, y, xy), if on corner (3): sept neighbor (x, y, z, xy, yz, xz, xyz)
+		// Edge
+		if(neighbors.Count == 2)
+        {
+			neighbors.Add(Neighbors.None | neighbors[0] | neighbors[1]);
+        }
+		// Corner
+		if(neighbors.Count == 3)
+		{
+			neighbors.Add(Neighbors.None | neighbors[0] | neighbors[1]);
+			neighbors.Add(Neighbors.None | neighbors[1] | neighbors[2]);
+			neighbors.Add(Neighbors.None | neighbors[0] | neighbors[2]);
+			neighbors.Add(Neighbors.None | neighbors[0] | neighbors[1] | neighbors[2]);
+        }
+		if(neighbors.Count > 0)
+		{
+			foreach(Neighbors neighbor in neighbors)
+			{
+				Vector3Int newChunkPos = this.chunkPos;
+				Vector3Int newInternalPos = internalPos;
+				if(neighbor.HasFlag(Neighbors.xNeg))
 				{
-					for(int z = internalPos.z - radius; z < internalPos.z + radius; z++)
-					{
-						Vector3Int nextPos = new Vector3Int(x, y, z);
-						if(this.IsPositionWithinBounds(nextPos) && Vector3Int.Distance(nextPos, internalPos) <= radius)
-                        {
-							this.terrainMap[internalPos.x, internalPos.y, internalPos.z] = -1f;
-						}
-					}
+					newChunkPos.x = this.chunkPos.x - 1;
+					newInternalPos.x = GameManager.Instance.ChunkSize;
+				}
+				else if(neighbor.HasFlag(Neighbors.xPos))
+                {
+					newChunkPos.x = this.chunkPos.x + 1;
+					newInternalPos.x = 0;
+                }
+				if(neighbor.HasFlag(Neighbors.yNeg))
+				{
+					newChunkPos.y = this.chunkPos.y - 1;
+					newInternalPos.y = GameManager.Instance.ChunkSize;
+				}
+				else if(neighbor.HasFlag(Neighbors.yPos))
+				{
+					newChunkPos.y = this.chunkPos.y + 1;
+					newInternalPos.y = 0;
+				}
+				if(neighbor.HasFlag(Neighbors.zNeg))
+				{
+					newChunkPos.z = this.chunkPos.z - 1;
+					newInternalPos.z = GameManager.Instance.ChunkSize;
+				}
+				else if(neighbor.HasFlag(Neighbors.zPos))
+				{
+					newChunkPos.z = this.chunkPos.z + 1;
+					newInternalPos.z = 0;
+				}
+				if(World.GetChunk(newChunkPos, out Chunk chunk) == true && chunk.GeneratedChunkData == true)
+				{
+					chunk.ModifyTerrainMap(newInternalPos, value, false);
 				}
 			}
-        }
-    }
+		}
+	}
 
 	// Is Position Within Bounds
 	private bool IsPositionWithinBounds(Vector3Int position)
     {
-		if(position.x >= 0 && position.x < GameManager.Instance.ChunkSize && position.y >= 0 && position.y < GameManager.Instance.ChunkSize && position.z >= 0 && position.z < GameManager.Instance.ChunkSize)
+		if(position.x >= 0 && position.x < GameManager.Instance.ChunkSize + 1 && position.y >= 0 && position.y < GameManager.Instance.ChunkSize + 1 && position.z >= 0 && position.z < GameManager.Instance.ChunkSize + 1)
         {
 			return true;
         }
@@ -95,21 +184,14 @@ public class Chunk
 	// Initialize Chunk Object
 	public void InitializeChunkObject()
     {
-		this.chunkGO = new GameObject($@"Chunk: {this.chunkPos}");
-		this.chunkGO.transform.position = this.chunkPos.ChunkPosToWorldPos();
-		this.chunkGO.transform.parent = GameManager.Instance.ChunkParentGO.transform;
-		this.meshFilter = this.chunkGO.AddComponent<MeshFilter>();
-		this.meshRenderer = this.chunkGO.AddComponent<MeshRenderer>();
+		this.ChunkGO = new GameObject($@"Chunk: {this.chunkPos}");
+		this.ChunkGO.transform.position = this.chunkPos.ChunkPosToWorldPos();
+		this.ChunkGO.transform.parent = GameManager.Instance.ChunkParentGO.transform;
+		this.meshFilter = this.ChunkGO.AddComponent<MeshFilter>();
+		this.meshRenderer = this.ChunkGO.AddComponent<MeshRenderer>();
 		this.meshRenderer.material = GameManager.Instance.ChunkMaterial;
-		this.meshCollider = this.chunkGO.AddComponent<MeshCollider>();
-		this.CreateMeshData();
-	}
-
-	// Remesh Chunk
-	public void RemeshChunk()
-    {
-		this.GenerateCaveWorms();
-		this.GenerateChunkData();
+		this.meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+		this.meshCollider = this.ChunkGO.AddComponent<MeshCollider>();
 		this.CreateMeshData();
 	}
 
