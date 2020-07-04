@@ -352,7 +352,7 @@ MonoBehaviour:
   MaxWormChunkDistance: 3
   MaxWormNodes: 50
   CaveWormRadius: 3
-  CaveWormCarveValue: 2
+  CaveWormCarveValue: 1
 --- !u!4 &859644680
 Transform:
   m_ObjectHideFlags: 0

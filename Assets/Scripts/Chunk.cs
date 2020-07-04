@@ -7,7 +7,7 @@ using UnityEngine;
 public class Chunk
 {
 	[Flags]
-	private enum Neighbors
+	public enum Neighbors
     {
 		None = 0,
 		xNeg = 1,
@@ -25,8 +25,8 @@ public class Chunk
 	private MeshCollider meshCollider;
 
 	// Chunk Data
-	public Vector3Int chunkPos;
-	private float[,,] terrainMap;
+	public Vector3Int ChunkPos;
+	private float[,,] chunkData;
 	public List<CaveWorm> CaveWorms = new List<CaveWorm>();
 
 	// Mesh Data
@@ -35,15 +35,15 @@ public class Chunk
 
 	// Flags
 	public bool ShouldGenerateChunkData = false;
-	public bool GeneratedCaveWorms = false;
-	public bool GeneratedChunkData = false;
-	public bool GeneratedMesh = false;
+	public bool HasGeneratedCaveWorms = false;
+	public bool HasGeneratedChunkData = false;
+	public bool HasGeneratedMesh = false;
 
 
 	// Constructor
-	public Chunk(Vector3Int position, bool generateData)
+	public Chunk(Vector3Int chunkPos, bool generateData)
 	{
-		this.chunkPos = position;
+		this.ChunkPos = chunkPos;
 		this.ShouldGenerateChunkData = generateData;
 	}
 
@@ -55,35 +55,52 @@ public class Chunk
 		int numWorms = GameManager.Instance.MinimumCaveWorms;
 		for(int i = 0; i < numWorms; i++)
 		{
-			int posX = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise((this.chunkPos.x * this.chunkPos.x) + (posOffset * 1 * i), this.chunkPos.y + (posOffset * 1 * i), this.chunkPos.z + (posOffset * 1 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize + 1));
-			int posY = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise(this.chunkPos.x + (posOffset * 2 * i), (this.chunkPos.y * this.chunkPos.y) + (posOffset * 2 * i), this.chunkPos.z + (posOffset * 2 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize + 1));
-			int posZ = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise(this.chunkPos.x + (posOffset * 3 * i), this.chunkPos.y + (posOffset * 3 * i), (this.chunkPos.z * this.chunkPos.z) + (posOffset * 3 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize + 1));
-			Vector3Int newWormPos = new Vector3Int(posX, posY, posZ).InternalPosToWorldPos(this.chunkPos);
+			int posX = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise((this.ChunkPos.x * this.ChunkPos.x) + (posOffset * 1 * i), this.ChunkPos.y + (posOffset * 1 * i), this.ChunkPos.z + (posOffset * 1 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize));
+			int posY = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise(this.ChunkPos.x + (posOffset * 2 * i), (this.ChunkPos.y * this.ChunkPos.y) + (posOffset * 2 * i), this.ChunkPos.z + (posOffset * 2 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize));
+			int posZ = Mathf.RoundToInt(GameManager.Instance.CaveWormPositionNoiseGenerator.GetNoise(this.ChunkPos.x + (posOffset * 3 * i), this.ChunkPos.y + (posOffset * 3 * i), (this.ChunkPos.z * this.ChunkPos.z) + (posOffset * 3 * i)).Map(-1, 1, 0, GameManager.Instance.ChunkSize));
+			Vector3Int newWormPos = new Vector3Int(posX, posY, posZ).InternalPosToWorldPos(this.ChunkPos);
 			CaveWorm newWorm = new CaveWorm(newWormPos, GameManager.Instance.CaveWormRadius);
 			this.CaveWorms.Add(newWorm);
 		}
+		this.HasGeneratedCaveWorms = true;
 	}
 
 	// Generate Chunk Data
 	public void GenerateChunkData()
 	{
-		this.PopulateTerrainMap();
+		// The data points for terrain are stored at the corners of our "cubes", so the terrainMap needs to be 1 larger than the width/height of our mesh.
+		this.chunkData = new float[GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1];
+		for(int x = 0; x < GameManager.Instance.ChunkSize + 1; x++)
+		{
+			for(int z = 0; z < GameManager.Instance.ChunkSize + 1; z++)
+			{
+				for(int y = 0; y < GameManager.Instance.ChunkSize + 1; y++)
+				{
+					Vector3Int worldPos = new Vector3Int(x, y, z).InternalPosToWorldPos(this.ChunkPos);
+					float value = GameManager.Instance.NoiseGenerator.GetNoise(worldPos.x, worldPos.y, worldPos.z) * GameManager.Instance.Multiplier;
+					this.chunkData[x, y, z] = value;
+				}
+			}
+		}
+		this.HasGeneratedChunkData = true;
 	}
 
-	// Modify Terrain Map
-	public void ModifyTerrainMap(Vector3Int internalPos, float value, bool originalRequest)
+	// Get Chunk Data
+	public float GetChunkData(Vector3Int internalPos)
 	{
-		this.terrainMap[internalPos.x, internalPos.y, internalPos.z] += value;
-		if(originalRequest == true)
-        {
-			this.NotifyNeighbors(internalPos, value);
-		}
+		return this.chunkData[internalPos.x, internalPos.y, internalPos.z];
+	}
+
+	// Set Chunk Data
+	public void SetChunkData(Vector3Int internalPos, float value)
+	{
+		this.chunkData[internalPos.x, internalPos.y, internalPos.z] += value;
 	}
 
 	// Notify Neighbors
-	private void NotifyNeighbors(Vector3Int internalPos, float value)
+	public void NotifyNeighbors(Vector3Int internalPos, float value)
     {
-		// TODO: Seams still sometimes appearing, maybe drop notify neighbors method and replace with an edge copy method that averages the values for every edge location with neighboring chunk edges
+		// TODO: Seams still sometimes appearing
 		// Check if this position is neighboring any other chunks, get how many/which directions
 		List<Neighbors> neighbors = new List<Neighbors>();
 		if(internalPos.x == 0)
@@ -128,108 +145,59 @@ public class Chunk
 		{
 			foreach(Neighbors neighbor in neighbors)
 			{
-				Vector3Int newChunkPos = this.chunkPos;
+				Vector3Int newChunkPos = this.ChunkPos;
 				Vector3Int newInternalPos = internalPos;
 				if(neighbor.HasFlag(Neighbors.xNeg))
 				{
-					newChunkPos.x = this.chunkPos.x - 1;
+					newChunkPos.x = this.ChunkPos.x - 1;
 					newInternalPos.x = GameManager.Instance.ChunkSize;
 				}
 				else if(neighbor.HasFlag(Neighbors.xPos))
                 {
-					newChunkPos.x = this.chunkPos.x + 1;
+					newChunkPos.x = this.ChunkPos.x + 1;
 					newInternalPos.x = 0;
                 }
 				if(neighbor.HasFlag(Neighbors.yNeg))
 				{
-					newChunkPos.y = this.chunkPos.y - 1;
+					newChunkPos.y = this.ChunkPos.y - 1;
 					newInternalPos.y = GameManager.Instance.ChunkSize;
 				}
 				else if(neighbor.HasFlag(Neighbors.yPos))
 				{
-					newChunkPos.y = this.chunkPos.y + 1;
+					newChunkPos.y = this.ChunkPos.y + 1;
 					newInternalPos.y = 0;
 				}
 				if(neighbor.HasFlag(Neighbors.zNeg))
 				{
-					newChunkPos.z = this.chunkPos.z - 1;
+					newChunkPos.z = this.ChunkPos.z - 1;
 					newInternalPos.z = GameManager.Instance.ChunkSize;
 				}
 				else if(neighbor.HasFlag(Neighbors.zPos))
 				{
-					newChunkPos.z = this.chunkPos.z + 1;
+					newChunkPos.z = this.ChunkPos.z + 1;
 					newInternalPos.z = 0;
 				}
-				if(World.GetChunk(newChunkPos, out Chunk chunk) == true && chunk.GeneratedChunkData == true)
+				if(World.GetChunk(newChunkPos, out Chunk chunk) == true && chunk.HasGeneratedChunkData == true)
 				{
-					chunk.ModifyTerrainMap(newInternalPos, value, false);
+					chunk.SetChunkData(newInternalPos, value);
 				}
 			}
 		}
 	}
 
-	// Is Position Within Bounds
-	private bool IsPositionWithinBounds(Vector3Int position)
+	// Instantiate Chunk Game Object
+	public void InstantiateChunkGameObject()
     {
-		if(position.x >= 0 && position.x < GameManager.Instance.ChunkSize + 1 && position.y >= 0 && position.y < GameManager.Instance.ChunkSize + 1 && position.z >= 0 && position.z < GameManager.Instance.ChunkSize + 1)
-        {
-			return true;
-        }
-		else
-        {
-			return false;
-        }
-    }
-
-	// Initialize Chunk Object
-	public void InitializeChunkObject()
-    {
-		this.ChunkGO = new GameObject($@"Chunk: {this.chunkPos}");
-		this.ChunkGO.transform.position = this.chunkPos.ChunkPosToWorldPos();
+		this.ChunkGO = new GameObject($@"Chunk: {this.ChunkPos}");
+		this.ChunkGO.transform.position = this.ChunkPos.ChunkPosToWorldPos();
 		this.ChunkGO.transform.parent = GameManager.Instance.ChunkParentGO.transform;
 		this.meshFilter = this.ChunkGO.AddComponent<MeshFilter>();
 		this.meshRenderer = this.ChunkGO.AddComponent<MeshRenderer>();
 		this.meshRenderer.material = GameManager.Instance.ChunkMaterial;
 		this.meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
 		this.meshCollider = this.ChunkGO.AddComponent<MeshCollider>();
-		this.CreateMeshData();
-	}
-
-	// Populate Terrain Map
-	private void PopulateTerrainMap()
-	{
-		this.terrainMap = new float[GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1];
-		// The data points for terrain are stored at the corners of our "cubes", so the terrainMap needs to be 1 larger than the width/height of our mesh.
-		for(int x = 0; x < GameManager.Instance.ChunkSize + 1; x++)
-		{
-			for(int z = 0; z < GameManager.Instance.ChunkSize + 1; z++)
-			{
-				for(int y = 0; y < GameManager.Instance.ChunkSize + 1; y++)
-				{
-					Vector3Int worldPos = new Vector3Int(x, y, z).InternalPosToWorldPos(this.chunkPos);
-					float noiseValue = GameManager.Instance.NoiseGenerator.GetNoise(worldPos.x, worldPos.y, worldPos.z) * GameManager.Instance.Multiplier;
-					this.terrainMap[x, y, z] = noiseValue;
-				}
-			}
-		}
-		this.GeneratedChunkData = true;
-	}
-
-	// Create Mesh Data
-	private void CreateMeshData()
-	{
-        this.ClearMeshData();
-		for(int x = 0; x < GameManager.Instance.ChunkSize; x++)
-		{
-			for(int y = 0; y < GameManager.Instance.ChunkSize; y++)
-			{
-				for(int z = 0; z < GameManager.Instance.ChunkSize; z++)
-				{
-                    this.MarchCube(new Vector3Int(x, y, z));
-				}
-			}
-		}
-        this.BuildMesh();
+		this.CreateMesh();
+		this.AssignMesh();
 	}
 
 	// Clear Mesh Data
@@ -239,14 +207,30 @@ public class Chunk
 		this.triangles.Clear();
 	}
 
-	// March Cube
-	private void MarchCube(Vector3Int position)
+	// Create Mesh
+	private void CreateMesh()
+	{
+        this.ClearMeshData();
+		for(int x = 0; x < GameManager.Instance.ChunkSize; x++)
+		{
+			for(int y = 0; y < GameManager.Instance.ChunkSize; y++)
+			{
+				for(int z = 0; z < GameManager.Instance.ChunkSize; z++)
+				{
+                    this.BuildMesh(new Vector3Int(x, y, z));
+				}
+			}
+		}
+	}
+
+	// Build Mesh using Marching Cubes
+	private void BuildMesh(Vector3Int internalPos)
 	{
 		// Sample terrain values at each corner of the cube.
 		float[] cube = new float[8];
 		for(int i = 0; i < 8; i++)
 		{
-			cube[i] = this.SampleTerrain(position + GameManager.CornerTable[i]);
+			cube[i] = this.GetChunkData(internalPos + GameManager.CornerTable[i]);
 		}
 		// Get the configuration index of this cube.
 		int configIndex = this.GetCubeConfiguration(cube);
@@ -261,7 +245,7 @@ public class Chunk
 		{
 			for(int p = 0; p < 3; p++)
 			{
-				// Get the current indice. We increment triangleIndex through each loop.
+				// Get the current index. We increment triangleIndex through each loop.
 				int index = GameManager.TriangleTable[configIndex, edgeIndex];
 				// If the current edgeIndex is -1, there are no more indices and we can exit the function.
 				if(index == -1)
@@ -269,8 +253,8 @@ public class Chunk
 					return;
 				}
 				// Get the vertices for the start and end of this edge.
-				Vector3 vert1 = position + GameManager.CornerTable[GameManager.EdgeIndexes[index, 0]];
-				Vector3 vert2 = position + GameManager.CornerTable[GameManager.EdgeIndexes[index, 1]];
+				Vector3 vert1 = internalPos + GameManager.CornerTable[GameManager.EdgeIndexes[index, 0]];
+				Vector3 vert2 = internalPos + GameManager.CornerTable[GameManager.EdgeIndexes[index, 1]];
 				Vector3 vertPosition;
 				if(GameManager.Instance.SmoothTerrain == true)
                 {
@@ -288,7 +272,7 @@ public class Chunk
                     {
 						difference = (GameManager.Instance.TerrainSurfaceCutoff - vert1Sample) / difference;
                     }
-					// Calculate the point alog the edge that passes through.
+					// Calculate the point along the edge that passes through.
 					vertPosition = vert1 + ((vert2 - vert1) * difference);
 				}
 				else
@@ -304,12 +288,6 @@ public class Chunk
 		}
 	}
 
-	// Sample Terrain
-	private float SampleTerrain(Vector3Int point)
-	{
-		return this.terrainMap[point.x, point.y, point.z];
-	}
-
 	// Get Cube Configuration
 	private int GetCubeConfiguration(float[] cube)
 	{
@@ -317,8 +295,7 @@ public class Chunk
 		int configurationIndex = 0;
 		for(int i = 0; i < 8; i++)
 		{
-			// If it is, use bit-magic to the set the corresponding bit to 1. So if only the 3rd point in the cube was below
-			// the surface, the bit would look like 00100000, which represents the integer value 32.
+			// If it is, set the corresponding bit to 1.
 			if(cube[i] > GameManager.Instance.TerrainSurfaceCutoff)
             {
                 configurationIndex |= 1 << i;
@@ -327,8 +304,8 @@ public class Chunk
 		return configurationIndex;
 	}
 
-	// Build Mesh
-    private void BuildMesh()
+	// Assign Mesh
+    private void AssignMesh()
     {
         Mesh mesh = new Mesh
         {
@@ -338,6 +315,6 @@ public class Chunk
         mesh.RecalculateNormals();
         this.meshFilter.mesh = mesh;
 		this.meshCollider.sharedMesh = mesh;
-		this.GeneratedMesh = true;
+		this.HasGeneratedMesh = true;
 	}
 }

@@ -35,11 +35,7 @@ public static class World
     // Regenerate Starting Chunks
     public static void RegenerateStartingChunks()
     {
-        foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
-        {
-            GameObject.Destroy(chunk.Value.ChunkGO);
-        }
-        Chunks.Clear();
+        RemoveAllChunks();
         GenerateStartingChunks();
     }
 
@@ -55,6 +51,16 @@ public static class World
             chunk = null;
             return false;
         }
+    }
+
+    // Remove All Chunks
+    private static void RemoveAllChunks()
+    {
+        foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
+        {
+            GameObject.Destroy(chunk.Value.ChunkGO);
+        }
+        Chunks.Clear();
     }
 
     // Generate Starting Chunks
@@ -101,9 +107,9 @@ public static class World
         // Loop through all worm only chunks and add them to chunk dictionary
         foreach(Chunk chunk in chunksToAdd)
         {
-            if(Chunks.ContainsKey(chunk.chunkPos) == false)
+            if(Chunks.ContainsKey(chunk.ChunkPos) == false)
             {
-                Chunks.Add(chunk.chunkPos, chunk);
+                Chunks.Add(chunk.ChunkPos, chunk);
             }
         }
         Debug.Log("Successfully Generated Cave Worms for Starting Chunks!");
@@ -137,30 +143,32 @@ public static class World
         // Loop through all chunks and generate meshes for ones with chunk data
         foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
         {
-            if(chunk.Value.GeneratedChunkData == true)
+            if(chunk.Value.HasGeneratedChunkData == true)
             {
-                chunk.Value.InitializeChunkObject();
+                chunk.Value.InstantiateChunkGameObject();
             }
         }
         Debug.Log("Successfully Generated GameObjects and Meshes for Starting Chunks!");
     }
 
-    // Carve Cave Worm
-    private static void CarveCave(Vector3Int worldPos, int radius)
+    // Carve Cave
+    private static void CarveCave(Vector3Int nodeWorldPos, int radius)
     {
-        for(int x = worldPos.x - radius; x < worldPos.x + radius; x++)
+        for(int x = nodeWorldPos.x - radius; x < nodeWorldPos.x + radius; x++)
         {
-            for(int y = worldPos.y - radius; y < worldPos.y + radius; y++)
+            for(int y = nodeWorldPos.y - radius; y < nodeWorldPos.y + radius; y++)
             {
-                for(int z = worldPos.z - radius; z < worldPos.z + radius; z++)
+                for(int z = nodeWorldPos.z - radius; z < nodeWorldPos.z + radius; z++)
                 {
-                    Vector3Int nextPos = new Vector3Int(x, y, z);
-                    float distance = Vector3Int.Distance(nextPos, worldPos);
-                    if(distance <= radius && GetChunk(nextPos.WorldPosToChunkPos(), out Chunk chunk) == true && chunk.GeneratedChunkData == true)
+                    Vector3Int carveWorldPos = new Vector3Int(x, y, z);
+                    Vector3Int carveInternalPos = carveWorldPos.WorldPosToInternalPos();
+                    Vector3Int chunkPos = carveWorldPos.WorldPosToChunkPos();
+                    float distance = Vector3Int.Distance(carveWorldPos, nodeWorldPos);
+                    if(distance <= radius && GetChunk(chunkPos, out Chunk chunk) == true && chunk.HasGeneratedChunkData == true)
                     {
-                        Vector3Int internalPos = nextPos.WorldPosToInternalPos();
                         float value = Mathf.SmoothStep(GameManager.Instance.CaveWormCarveValue, 0f, distance / radius);
-                        chunk.ModifyTerrainMap(internalPos, value, true);
+                        chunk.SetChunkData(carveInternalPos, value);
+                        chunk.NotifyNeighbors(carveInternalPos, value);
                     }
                 }
             }

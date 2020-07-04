@@ -297,10 +297,10 @@ public class GameManager : MonoBehaviour
 	public int Seed = 0;
 	// Room Noise Generator
 	public FastNoise NoiseGenerator;
-	public FastNoise.NoiseType NoiseType;
-	public FastNoise.Interp NoiseInterpolation;
-	public FastNoise.FractalType FractalType;
-	public float Frequency = 0.015f;
+	public FastNoise.NoiseType NoiseType = FastNoise.NoiseType.PerlinFractal;
+	public FastNoise.Interp NoiseInterpolation = FastNoise.Interp.Linear;
+	public FastNoise.FractalType FractalType = FastNoise.FractalType.FBM;
+	public float Frequency = 0.009f;
 	public int Octaves = 4;
 	public float Lacunarity = 4f;
 	public float Persistence = 0.2f;
@@ -308,22 +308,22 @@ public class GameManager : MonoBehaviour
 	// Cave Worm Noise Generator
 	public bool ShouldCarveWorms = true;
 	public FastNoise CaveWormPositionNoiseGenerator;
-	public FastNoise.NoiseType CaveWormPositionNoiseType;
-	public FastNoise.Interp CaveWormPositionNoiseInterpolation;
-	public float CaveWormPositionFrequency = 0.5f;
+	public FastNoise.NoiseType CaveWormPositionNoiseType = FastNoise.NoiseType.WhiteNoise;
+	public FastNoise.Interp CaveWormPositionNoiseInterpolation = FastNoise.Interp.Linear;
+	public float CaveWormPositionFrequency = 1f;
 	public FastNoise CaveWormDirectionNoiseGenerator;
-	public FastNoise.NoiseType CaveWormDirectionNoiseType;
-	public FastNoise.Interp CaveWormDirectionNoiseInterpolation;
-	public float CaveWormDirectionFrequency = 0.5f;
-	public int MinimumCaveWorms = 0;
+	public FastNoise.NoiseType CaveWormDirectionNoiseType = FastNoise.NoiseType.Perlin;
+	public FastNoise.Interp CaveWormDirectionNoiseInterpolation = FastNoise.Interp.Linear;
+	public float CaveWormDirectionFrequency = 0.1f;
+	public int MinimumCaveWorms = 1;
 	public int MaximumCaveWorms = 2;
-	public int MaxWormChunkDistance = 4;
+	public int MaxWormChunkDistance = 3;
 	public int MaxWormNodes = 50;
-	public int CaveWormRadius = 4;
-	public float CaveWormCarveValue = -1f;
+	public int CaveWormRadius = 3;
+	public float CaveWormCarveValue = 1f;
 
 	// Flags
-	private bool hasGenerated = false;
+	private bool hasGeneratedWorld = false;
 
 	// Awake is called when the script instance is being loaded.
 	private void Awake()
@@ -337,7 +337,7 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
 		World.Start();
-		this.hasGenerated = true;
+		this.hasGeneratedWorld = true;
     }
 
     // Update is called once per frame.
@@ -355,7 +355,7 @@ public class GameManager : MonoBehaviour
 	// Regenerate Starting Chunks
 	public void RegenerateStartingChunks()
 	{
-		if(this.hasGenerated == true)
+		if(this.hasGeneratedWorld == true)
         {
 			this.UpdateNoiseGenerators();
 			World.RegenerateStartingChunks();
