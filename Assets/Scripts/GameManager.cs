@@ -1,16 +1,30 @@
 ﻿using UnityEngine;
 
 
+/// <summary>
+/// Singleton class that exists as a GameObject in scene that sends out messages to all the game's systems.
+/// </summary>
 public class GameManager : MonoBehaviour
 {
-	// Instance
+	/// <summary>
+	/// Singleton instance of the GameManager.
+	/// </summary>
 	public static GameManager Instance { get; private set; }
 
 	// Editor References
+	/// <summary>
+	/// The GameObject to act as parent for all the chunks.
+	/// </summary>
 	public GameObject ChunkParentGO;
+	/// <summary>
+	/// The material used to render all the chunks.
+	/// </summary>
 	public Material ChunkMaterial;
 
 	// Tables
+	/// <summary>
+	/// Table representing all the corners of a cube.
+	/// </summary>
 	public static Vector3Int[] CornerTable = new Vector3Int[8]
 	{
 		new Vector3Int(0, 0, 0),
@@ -23,10 +37,16 @@ public class GameManager : MonoBehaviour
 		new Vector3Int(0, 1, 1)
 
 	};
+	/// <summary>
+	/// Table representing all the edges of a cube by the 2 corners that make up that edge, references the indexes of corners as denoted in Corner Table.
+	/// </summary>
 	public static int[,] EdgeIndexes = new int[12, 2]
 	{
 		{0, 1}, {1, 2}, {3, 2}, {0, 3}, {4, 5}, {5, 6}, {7, 6}, {4, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7}
 	};
+	/// <summary>
+	/// Table representing all the vertex/triangle combinations possible for each marching cube configuration.
+	/// </summary>
 	public static int[,] TriangleTable = new int[,]
 	{
 		{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -288,23 +308,38 @@ public class GameManager : MonoBehaviour
 	};
 
 	// Values
+	/// <summary>
+	/// The size in world coordinate system of each chunk.
+	/// </summary>
 	public int ChunkSize = 32;
+	/// <summary>
+	/// The amount of chunks generated for the starting area is this value cubed.
+	/// </summary>
 	public int StartingChunkArea = 5;
+	/// <summary>
+	/// The value denoting the boundary between air and solid ground.
+	/// </summary>
 	public float TerrainSurfaceCutoff = 0.5f;
+	/// <summary>
+	/// Whether the terrain should be rounded to exact halfway between each cube corner (false), or smoothed in a linearly interpolated fashion (true).
+	/// </summary>
 	public bool SmoothTerrain = true;
 
 	// Noise
+	/// <summary>
+	/// The seed to use for all noise generation.
+	/// </summary>
 	public int Seed = 0;
 	// Room Noise Generator
 	public FastNoise NoiseGenerator;
 	public FastNoise.NoiseType NoiseType = FastNoise.NoiseType.PerlinFractal;
 	public FastNoise.Interp NoiseInterpolation = FastNoise.Interp.Linear;
 	public FastNoise.FractalType FractalType = FastNoise.FractalType.FBM;
-	public float Frequency = 0.009f;
-	public int Octaves = 4;
-	public float Lacunarity = 4f;
-	public float Persistence = 0.2f;
-	public float Multiplier = 1f;
+	public float RoomFrequency = 0.009f;
+	public int RoomOctaves = 4;
+	public float RoomLacunarity = 4f;
+	public float RoomPersistence = 0.2f;
+	public float RoomMultiplier = 1f;
 	// Cave Worm Noise Generator
 	public bool ShouldCarveWorms = true;
 	public FastNoise CaveWormPositionNoiseGenerator;
@@ -352,7 +387,9 @@ public class GameManager : MonoBehaviour
 		World.FixedUpdate();
     }
 
-	// Regenerate Starting Chunks
+	/// <summary>
+	/// Tells the World object to regenerate all current chunks.
+	/// </summary>
 	public void RegenerateStartingChunks()
 	{
 		if(this.hasGeneratedWorld == true)
@@ -362,17 +399,19 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
-	// Update Noise Generators
+	/// <summary>
+	/// Updates the noise generators by passing them the current noise generator values set in the inspector window.
+	/// </summary>
 	private void UpdateNoiseGenerators()
     {
 		// Rooms
 		this.NoiseGenerator = new FastNoise(this.Seed);
 		this.NoiseGenerator.SetNoiseType(this.NoiseType);
 		this.NoiseGenerator.SetFractalType(this.FractalType);
-		this.NoiseGenerator.SetFrequency(this.Frequency);
-		this.NoiseGenerator.SetFractalOctaves(this.Octaves);
-		this.NoiseGenerator.SetFractalLacunarity(this.Lacunarity);
-		this.NoiseGenerator.SetFractalGain(this.Persistence);
+		this.NoiseGenerator.SetFrequency(this.RoomFrequency);
+		this.NoiseGenerator.SetFractalOctaves(this.RoomOctaves);
+		this.NoiseGenerator.SetFractalLacunarity(this.RoomLacunarity);
+		this.NoiseGenerator.SetFractalGain(this.RoomPersistence);
 		// Cave Worms
 		this.CaveWormPositionNoiseGenerator = new FastNoise(this.Seed);
 		this.CaveWormPositionNoiseGenerator.SetNoiseType(this.CaveWormPositionNoiseType);

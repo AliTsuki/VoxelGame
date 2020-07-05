@@ -4,6 +4,9 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 
+/// <summary>
+/// Class describing how to render the custom inspector window for the GameManager script object.
+/// </summary>
 [CustomEditor(typeof(GameManager)), System.Serializable]
 public class GameManagerEditor : Editor
 {
@@ -40,11 +43,11 @@ public class GameManagerEditor : Editor
 		this.gm.NoiseType = (FastNoise.NoiseType)EditorGUILayout.EnumPopup("Noise Type:", this.gm.NoiseType);
 		this.gm.NoiseInterpolation = (FastNoise.Interp)EditorGUILayout.EnumPopup("Noise Interpolation:", this.gm.NoiseInterpolation);
 		this.gm.FractalType = (FastNoise.FractalType)EditorGUILayout.EnumPopup("Fractal Type:", this.gm.FractalType);
-		this.gm.Frequency = EditorGUILayout.FloatField("Frequency:", this.gm.Frequency);
-		this.gm.Octaves = EditorGUILayout.IntField("Octaves:", this.gm.Octaves);
-		this.gm.Lacunarity = EditorGUILayout.FloatField("Lacunarity:", this.gm.Lacunarity);
-		this.gm.Persistence = EditorGUILayout.FloatField("Persistence:", this.gm.Persistence);
-		this.gm.Multiplier = EditorGUILayout.FloatField("Multiplier:", this.gm.Multiplier);
+		this.gm.RoomFrequency = EditorGUILayout.FloatField("Frequency:", this.gm.RoomFrequency);
+		this.gm.RoomOctaves = EditorGUILayout.IntField("Octaves:", this.gm.RoomOctaves);
+		this.gm.RoomLacunarity = EditorGUILayout.FloatField("Lacunarity:", this.gm.RoomLacunarity);
+		this.gm.RoomPersistence = EditorGUILayout.FloatField("Persistence:", this.gm.RoomPersistence);
+		this.gm.RoomMultiplier = EditorGUILayout.FloatField("Multiplier:", this.gm.RoomMultiplier);
 		// Cave Worm Settings
 		EditorGUILayout.Space();
 		EditorGUILayout.LabelField("Cave Worm Noise Settings", BoldCenteredStyle);

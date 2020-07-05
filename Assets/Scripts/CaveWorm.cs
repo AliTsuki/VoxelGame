@@ -3,38 +3,123 @@
 using UnityEngine;
 
 
+/// <summary>
+/// The class representing a Perlin Worm used to generate caves.
+/// </summary>
 public class CaveWorm
 {
-    // Node List
-    public List<Vector3Int> Nodes = new List<Vector3Int>();
-    public int Radius;
-
-    // Constructor
-    public CaveWorm(Vector3Int position, int radius)
+    /// <summary>
+    /// Class representing one segment of a cave worm that contains a list of points/values.
+    /// </summary>
+    public class Segment
     {
-        this.Nodes.Add(position);
-        this.Radius = radius;
-        this.GenerateNodes();
+        /// <summary>
+        /// Struct containing a position in world coordinate system and a float value for that position.
+        /// </summary>
+        public struct Point
+        {
+            public Vector3Int WorldPosition;
+            public float Value;
+
+            /// <summary>
+            /// Creates a new point using given position and value.
+            /// </summary>
+            /// <param name="worldPosition">The position in world coordinate system for this point.</param>
+            /// <param name="value">The value of this point.</param>
+            public Point(Vector3Int worldPosition, float value)
+            {
+                this.WorldPosition = worldPosition;
+                this.Value = value;
+            }
+        }
+
+        /// <summary>
+        /// The position of this Segment's center node in world coordinate system.
+        /// </summary>
+        public Vector3Int WorldPosition;
+        /// <summary>
+        /// List of all points contained in this segment.
+        /// </summary>
+        public List<Point> Points = new List<Point>();
+
+        /// <summary>
+        /// Creates a new segment with the given position in world coordinate system as its center node.
+        /// </summary>
+        /// <param name="worldPosition">The position of the center node of this segment in world coordinate system.</param>
+        public Segment(Vector3Int worldPosition)
+        {
+            this.WorldPosition = worldPosition;
+        }
     }
 
-    // Generate Nodes
-    public void GenerateNodes()
+
+    /// <summary>
+    /// List of all the segments contained in this cave worm.
+    /// </summary>
+    public List<Segment> Segments = new List<Segment>();
+    /// <summary>
+    /// The radius measured in world coordinate system that represents how wide the cave should be around each node.
+    /// </summary>
+    public int Radius;
+
+    /// <summary>
+    /// Creates a new Cave Worm with the head at the given position and radius as given. Immediately runs the GenerateNodes() method and fills its list of nodes.
+    /// </summary>
+    /// <param name="position">The position in world coordinate system representing the start of the worm.</param>
+    /// <param name="radius">The radius in world coordinate system representing the size of the cave's walls from the center of each node.</param>
+    public CaveWorm(Vector3Int position, int radius)
+    {
+        Segment newSegment = new Segment(position);
+        this.Segments.Add(newSegment);
+        this.Radius = radius;
+        this.GenerateSegments();
+    }
+
+    /// <summary>
+    /// Generates all nodes for this worm. It works by looping through the maximum number of possible nodes,
+    /// breaking out if the next node is more than the max distance in MaxWormChunkDistance. For each node it 
+    /// samples 3 different locations of the noise generator and uses that as a normalized vector3 representing
+    /// the direction between the current node and the next node, it then places the next node in that direction
+    /// at radius amount of positions away from the current node.
+    /// </summary>
+    public void GenerateSegments()
     {
         int dirOffset = -1000;
-        for(int currentNode = 0; currentNode < GameManager.Instance.MaxWormNodes - 1; currentNode++)
+        for(int currentSegment = 0; currentSegment < GameManager.Instance.MaxWormNodes - 1; currentSegment++)
         {
-            float dirX = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Nodes[currentNode].x + (dirOffset * 1), this.Nodes[currentNode].y + (dirOffset * 1), this.Nodes[currentNode].z + (dirOffset * 1));
-            float dirY = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Nodes[currentNode].x + (dirOffset * 2), this.Nodes[currentNode].y + (dirOffset * 2), this.Nodes[currentNode].z + (dirOffset * 2));
-            float dirZ = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Nodes[currentNode].x + (dirOffset * 3), this.Nodes[currentNode].y + (dirOffset * 3), this.Nodes[currentNode].z + (dirOffset * 3));
+            float dirX = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Segments[currentSegment].WorldPosition.x + (dirOffset * 1), this.Segments[currentSegment].WorldPosition.y + (dirOffset * 1), this.Segments[currentSegment].WorldPosition.z + (dirOffset * 1));
+            float dirY = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Segments[currentSegment].WorldPosition.x + (dirOffset * 2), this.Segments[currentSegment].WorldPosition.y + (dirOffset * 2), this.Segments[currentSegment].WorldPosition.z + (dirOffset * 2));
+            float dirZ = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Segments[currentSegment].WorldPosition.x + (dirOffset * 3), this.Segments[currentSegment].WorldPosition.y + (dirOffset * 3), this.Segments[currentSegment].WorldPosition.z + (dirOffset * 3));
             Vector3 newWormDir = new Vector3(dirX, dirY, dirZ).normalized;
-            Vector3Int newNodePos = (this.Nodes[currentNode] + (newWormDir * this.Radius)).RoundToInt();
-            if(Vector3.Distance(this.Nodes[0], newNodePos) < GameManager.Instance.MaxWormChunkDistance * GameManager.Instance.ChunkSize)
+            Vector3Int newSegmentPos = (this.Segments[currentSegment].WorldPosition + (newWormDir * this.Radius)).RoundToInt();
+            if(Vector3.Distance(this.Segments[0].WorldPosition, newSegmentPos) < GameManager.Instance.MaxWormChunkDistance * GameManager.Instance.ChunkSize)
             {
-                this.Nodes.Add(newNodePos);
+
+                this.Segments.Add(new Segment(newSegmentPos));
             }
             else
             {
                 break;
+            }
+        }
+        foreach(Segment segment in this.Segments)
+        {
+            for(int x = segment.WorldPosition.x - this.Radius; x < segment.WorldPosition.x + this.Radius; x++)
+            {
+                for(int y = segment.WorldPosition.y - this.Radius; y < segment.WorldPosition.y + this.Radius; y++)
+                {
+                    for(int z = segment.WorldPosition.z - this.Radius; z < segment.WorldPosition.z + this.Radius; z++)
+                    {
+                        Vector3Int nextWorldPos = new Vector3Int(x, y, z);
+                        float distance = Vector3Int.Distance(segment.WorldPosition, nextWorldPos);
+                        if(distance <= this.Radius && World.IsInBoundsOfWormArray(nextWorldPos) == true)
+                        {
+                            float value = Mathf.SmoothStep(GameManager.Instance.CaveWormCarveValue, 0f, distance / this.Radius);
+                            // TODO: these indexes are out of bounds of the array
+                            World.WormArray[nextWorldPos.x, nextWorldPos.y, nextWorldPos.z] = value;
+                        }
+                    }
+                }
             }
         }
     }

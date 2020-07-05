@@ -3,9 +3,16 @@
 using UnityEngine;
 
 
+/// <summary>
+/// Static class containing references to everything that exists in the game world. Controls chunk spawning/despawning.
+/// </summary>
 public static class World
 {
+    /// <summary>
+    /// Dictionary of every chunk that exists in the game world.
+    /// </summary>
     public static Dictionary<Vector3Int, Chunk> Chunks = new Dictionary<Vector3Int, Chunk>();
+    public static float[,,] WormArray;
 
 
     // Awake is called when the script instance is being loaded.
@@ -32,13 +39,21 @@ public static class World
 
     }
 
-    // Regenerate Starting Chunks
+    /// <summary>
+    /// Removes all chunks and then generates them anew.
+    /// </summary>
     public static void RegenerateStartingChunks()
     {
         RemoveAllChunks();
         GenerateStartingChunks();
     }
 
+    /// <summary>
+    /// Get a reference to a currently existing chunk by referencing the chunk coordinate system position.
+    /// </summary>
+    /// <param name="chunkPos">The position in chunk coordinate system to retrieve a chunk from.</param>
+    /// <param name="chunk">The reference to the chunk at that position, if one exists.</param>
+    /// <returns>Returns true if a chunk exists at the given position.</returns>
     public static bool GetChunk(Vector3Int chunkPos, out Chunk chunk)
     {
         if(Chunks.ContainsKey(chunkPos))
@@ -53,7 +68,26 @@ public static class World
         }
     }
 
-    // Remove All Chunks
+    /// <summary>
+    /// Returns true if given world position exists in worm array.
+    /// </summary>
+    /// <param name="worldPos">The position in world coordinate system to check.</param>
+    /// <returns>Returns true if the given position is a valid index in the array.</returns>
+    public static bool IsInBoundsOfWormArray(Vector3Int worldPos)
+    {
+        if(worldPos.x >= 0 && worldPos.x < WormArray.Length && worldPos.y >= 0 && worldPos.y < WormArray.Length && worldPos.z >= 0 && worldPos.z < WormArray.Length)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Removes all currently existing chunks by destroying their GameObjects and clearing the chunk dictionary.
+    /// </summary>
     private static void RemoveAllChunks()
     {
         foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
@@ -63,7 +97,11 @@ public static class World
         Chunks.Clear();
     }
 
-    // Generate Starting Chunks
+    /// <summary>
+    /// Generates a cube of chunks of StartingChunkArea cubed in size. First creates chunk references in memory, 
+    /// then creates cave worms for each chunk, then creates chunk data for each chunk, and finally generates a
+    /// GameObject for each chunk and performs marching cubes algorithm to mesh each chunk based on the chunk data.
+    /// </summary>
     private static void GenerateStartingChunks()
     {
         Debug.Log("Generating Starting Chunks...");
@@ -83,6 +121,8 @@ public static class World
         Debug.Log("Successfully Initialized Starting Chunks!");
         Debug.Log("Generating Cave Worms for Starting Chunks...");
         // Loop through all starting chunks and check a cube of max worm distance away for uninstantiated chunks and add them to a list for instantiation with generate flag set to false
+        int arraySize = GameManager.Instance.StartingChunkArea * (GameManager.Instance.ChunkSize + 1);
+        WormArray = new float[arraySize, arraySize, arraySize];
         List<Chunk> chunksToAdd = new List<Chunk>();
         foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
         {
@@ -123,22 +163,6 @@ public static class World
             }
         }
         Debug.Log("Successfully Generated Chunk Data for Starting Chunks!");
-        if(GameManager.Instance.ShouldCarveWorms == true)
-        {
-            Debug.Log("Carving Cave Worms for Starting Chunks...");
-            // Loop through all chunks and carve cave worms
-            foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
-            {
-                foreach(CaveWorm worm in chunk.Value.CaveWorms)
-                {
-                    foreach(Vector3Int node in worm.Nodes)
-                    {
-                        CarveCave(node, worm.Radius);
-                    }
-                }
-            }
-            Debug.Log("Successfully Carved Cave Worms for Starting Chunks!");
-        }
         Debug.Log("Generating GameObjects and Meshes for Starting Chunks...");
         // Loop through all chunks and generate meshes for ones with chunk data
         foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
@@ -149,29 +173,5 @@ public static class World
             }
         }
         Debug.Log("Successfully Generated GameObjects and Meshes for Starting Chunks!");
-    }
-
-    // Carve Cave
-    private static void CarveCave(Vector3Int nodeWorldPos, int radius)
-    {
-        for(int x = nodeWorldPos.x - radius; x < nodeWorldPos.x + radius; x++)
-        {
-            for(int y = nodeWorldPos.y - radius; y < nodeWorldPos.y + radius; y++)
-            {
-                for(int z = nodeWorldPos.z - radius; z < nodeWorldPos.z + radius; z++)
-                {
-                    Vector3Int carveWorldPos = new Vector3Int(x, y, z);
-                    Vector3Int carveInternalPos = carveWorldPos.WorldPosToInternalPos();
-                    Vector3Int chunkPos = carveWorldPos.WorldPosToChunkPos();
-                    float distance = Vector3Int.Distance(carveWorldPos, nodeWorldPos);
-                    if(distance <= radius && GetChunk(chunkPos, out Chunk chunk) == true && chunk.HasGeneratedChunkData == true)
-                    {
-                        float value = Mathf.SmoothStep(GameManager.Instance.CaveWormCarveValue, 0f, distance / radius);
-                        chunk.SetChunkData(carveInternalPos, value);
-                        chunk.NotifyNeighbors(carveInternalPos, value);
-                    }
-                }
-            }
-        }
     }
 }
