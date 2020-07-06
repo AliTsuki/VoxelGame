@@ -36,18 +36,17 @@ public class GameManagerEditor : Editor
 		this.gm.TerrainSurfaceCutoff = EditorGUILayout.FloatField("Terrain Cutoff:", this.gm.TerrainSurfaceCutoff);
 		this.gm.Seed = EditorGUILayout.IntField("Seed:", this.gm.Seed);
 		this.gm.SmoothTerrain = EditorGUILayout.Toggle("Smooth Terrain:", this.gm.SmoothTerrain);
-		// Cave Settings
 		// Noise Settings
 		EditorGUILayout.Space();
-		EditorGUILayout.LabelField("Noise Settings", BoldCenteredStyle);
-		this.gm.NoiseType = (FastNoise.NoiseType)EditorGUILayout.EnumPopup("Noise Type:", this.gm.NoiseType);
-		this.gm.NoiseInterpolation = (FastNoise.Interp)EditorGUILayout.EnumPopup("Noise Interpolation:", this.gm.NoiseInterpolation);
-		this.gm.FractalType = (FastNoise.FractalType)EditorGUILayout.EnumPopup("Fractal Type:", this.gm.FractalType);
-		this.gm.RoomFrequency = EditorGUILayout.FloatField("Frequency:", this.gm.RoomFrequency);
-		this.gm.RoomOctaves = EditorGUILayout.IntField("Octaves:", this.gm.RoomOctaves);
-		this.gm.RoomLacunarity = EditorGUILayout.FloatField("Lacunarity:", this.gm.RoomLacunarity);
-		this.gm.RoomPersistence = EditorGUILayout.FloatField("Persistence:", this.gm.RoomPersistence);
-		this.gm.RoomMultiplier = EditorGUILayout.FloatField("Multiplier:", this.gm.RoomMultiplier);
+		EditorGUILayout.LabelField("Room Noise Settings", BoldCenteredStyle);
+		this.gm.NoiseType = (FastNoise.NoiseType)EditorGUILayout.EnumPopup("Room Noise Type:", this.gm.NoiseType);
+		this.gm.NoiseInterpolation = (FastNoise.Interp)EditorGUILayout.EnumPopup("Room Noise Interpolation:", this.gm.NoiseInterpolation);
+		this.gm.FractalType = (FastNoise.FractalType)EditorGUILayout.EnumPopup("Room Fractal Type:", this.gm.FractalType);
+		this.gm.RoomFrequency = EditorGUILayout.FloatField("Room Frequency:", this.gm.RoomFrequency);
+		this.gm.RoomOctaves = EditorGUILayout.IntField("Room Octaves:", this.gm.RoomOctaves);
+		this.gm.RoomLacunarity = EditorGUILayout.FloatField("Room Lacunarity:", this.gm.RoomLacunarity);
+		this.gm.RoomPersistence = EditorGUILayout.FloatField("Room Persistence:", this.gm.RoomPersistence);
+		this.gm.RoomMultiplier = EditorGUILayout.FloatField("Room Value Multiplier:", this.gm.RoomMultiplier);
 		// Cave Worm Settings
 		EditorGUILayout.Space();
 		EditorGUILayout.LabelField("Cave Worm Noise Settings", BoldCenteredStyle);
@@ -64,7 +63,7 @@ public class GameManagerEditor : Editor
 		this.gm.MinimumCaveWorms = EditorGUILayout.IntField("Minimum Cave Worms:", this.gm.MinimumCaveWorms);
 		this.gm.MaximumCaveWorms = EditorGUILayout.IntField("Maximum Cave Worms:", this.gm.MaximumCaveWorms);
 		this.gm.MaxWormChunkDistance = EditorGUILayout.IntField("Maximum Worm Chunk Distance:", this.gm.MaxWormChunkDistance);
-		this.gm.MaxWormNodes = EditorGUILayout.IntField("Maximum Worm Nodes:", this.gm.MaxWormNodes);
+		this.gm.MaxWormSegments = EditorGUILayout.IntField("Maximum Worm Segments:", this.gm.MaxWormSegments);
 		this.gm.CaveWormRadius = EditorGUILayout.IntField("Cave Worm Radius:", this.gm.CaveWormRadius);
 		this.gm.CaveWormCarveValue = EditorGUILayout.FloatField("Cave Worm Carve Value:", this.gm.CaveWormCarveValue);
 		// Regenerate Button
@@ -73,7 +72,7 @@ public class GameManagerEditor : Editor
 		{
 			GameManager.Instance.RegenerateStartingChunks();
 		}
-		if(GUI.changed)
+		if(GUI.changed && EditorApplication.isPlaying == false)
 		{
 			EditorUtility.SetDirty(this.gm);
 			EditorSceneManager.MarkSceneDirty(this.gm.gameObject.scene);

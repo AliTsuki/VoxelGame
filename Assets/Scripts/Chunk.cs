@@ -83,12 +83,12 @@ public class Chunk
 
 	/// <summary>
 	/// Generates cave worms for this chunk. Works by looping through the amount of worms to create and getting
-	/// a random position for each worm to start using remapped 3d noise, then creates a worm at that position.
+	/// a random position for each worm to start using remapped 3d noise, then starts a cave worm at that position.
 	/// </summary>
 	public void GenerateCaveWorms()
 	{
 		int posOffset = 1000;
-		// TODO: Change number of worms to be based on noise and not the same value for every chunk
+		// TODO: Change number of worms to be based on noise and not the same value for every chunk.
 		int numWorms = GameManager.Instance.MinimumCaveWorms;
 		for(int i = 0; i < numWorms; i++)
 		{
@@ -116,7 +116,7 @@ public class Chunk
 				for(int y = 0; y <= GameManager.Instance.ChunkSize; y++)
 				{
 					Vector3Int worldPos = new Vector3Int(x, y, z).InternalPosToWorldPos(this.ChunkPos);
-					float value = GameManager.Instance.NoiseGenerator.GetNoise(worldPos.x, worldPos.y, worldPos.z) + World.WormArray[worldPos.x, worldPos.y, worldPos.z];
+					float value = GameManager.Instance.NoiseGenerator.GetNoise(worldPos.x, worldPos.y, worldPos.z) * GameManager.Instance.RoomMultiplier;
 					this.chunkData[x, y, z] = value;
 				}
 			}
@@ -139,9 +139,14 @@ public class Chunk
 	/// </summary>
 	/// <param name="internalPos">The position you wish to modify in chunk internal coordinate system.</param>
 	/// <param name="value">The amount you wish to add to the value at the given position in the 3D float field of chunk data.</param>
-	public void SetChunkData(Vector3Int internalPos, float value)
+	/// <param name="notifyNeighbors">Should chunk neighbors be notified of this change?</param>
+	public void SetChunkData(Vector3Int internalPos, float value, bool notifyNeighbors)
 	{
 		this.chunkData[internalPos.x, internalPos.y, internalPos.z] += value;
+		if(notifyNeighbors == true)
+        {
+			this.NotifyNeighbors(internalPos, value);
+		}
 	}
 
 	/// <summary>
@@ -149,10 +154,9 @@ public class Chunk
 	/// </summary>
 	/// <param name="internalPos">The position in chunk internal coordinate system to use for notifying neighbor chunks.</param>
 	/// <param name="value">The value to notify neighbor chunks of.</param>
-	public void NotifyNeighbors(Vector3Int internalPos, float value)
+	private void NotifyNeighbors(Vector3Int internalPos, float value)
     {
-		// TODO: Seams still sometimes appearing
-		// Check if this position is neighboring any other chunks, get how many/which directions
+		// Check if this position is neighboring any other chunks, get how many/which directions.
 		List<Neighbors> neighbors = new List<Neighbors>();
 		if(internalPos.x == 0)
 		{
@@ -178,14 +182,14 @@ public class Chunk
 		{
 			neighbors.Add(Neighbors.zPos);
 		}
-		// If on face (1): single neighbor (x), if on edge (2): triple neighbor (x, y, xy), if on corner (3): sept neighbor (x, y, z, xy, yz, xz, xyz)
+		// If on face (1): single neighbor (x), if on edge (2): triple neighbor (x, y, xy), if on corner (3): sept neighbor (x, y, z, xy, yz, xz, xyz).
 		// Edge
 		if(neighbors.Count == 2)
         {
 			neighbors.Add(neighbors[0] | neighbors[1]);
         }
 		// Corner
-		if(neighbors.Count == 3)
+		else if(neighbors.Count == 3)
 		{
 			neighbors.Add(neighbors[0] | neighbors[1]);
 			neighbors.Add(neighbors[1] | neighbors[2]);
@@ -230,7 +234,7 @@ public class Chunk
 				}
 				if(World.GetChunk(newChunkPos, out Chunk chunk) == true && chunk.HasGeneratedChunkData == true)
 				{
-					chunk.SetChunkData(newInternalPos, value);
+					chunk.SetChunkData(newInternalPos, value, false);
 				}
 			}
 		}

@@ -22,7 +22,29 @@ public static class Extensions
         return worldPos;
     }
 
-    // World Pos To Chunk Pos
+    /// <summary>
+    /// Converts an internal position to a world position using the chunk position the internal position is relative to.
+    /// </summary>
+    /// <param name="internalPos">The internal position of a chunk data value.</param>
+    /// <param name="chunkPos">The position of the parent chunk in chunk coordinate system.</param>
+    /// <returns>Returns the position in world coordinate system that corresponds to the given chunk internal coordinate system position.</returns>
+    public static Vector3Int InternalPosToWorldPos(this Vector3Int internalPos, Vector3Int chunkPos)
+    {
+        Vector3Int worldPos = new Vector3Int
+        {
+            x = internalPos.x + (chunkPos.x * GameManager.Instance.ChunkSize),
+            y = internalPos.y + (chunkPos.y * GameManager.Instance.ChunkSize),
+            z = internalPos.z + (chunkPos.z * GameManager.Instance.ChunkSize)
+        };
+        return worldPos;
+    }
+
+    /// <summary>
+    /// Converts a world position to the chunk position of the chunk that contains that world position within its bounds.
+    /// Note: if world position belongs to multiple chunks (face/edge/corner) it only returns the first matching chunk.
+    /// </summary>
+    /// <param name="worldPos">The world position in world coordinate system.</param>
+    /// <returns>Returns the position in chunk coordinate system for the chunk that contains the given world position in its bounds.</returns>
     public static Vector3Int WorldPosToChunkPos(this Vector3Int worldPos)
     {
         Vector3Int chunkPos = new Vector3Int(worldPos.x / GameManager.Instance.ChunkSize, worldPos.y / GameManager.Instance.ChunkSize, worldPos.z / GameManager.Instance.ChunkSize);
@@ -42,46 +64,34 @@ public static class Extensions
     }
 
     /// <summary>
-    /// Converts an internal position to a world position using the chunk position the internal position is relative to.
+    /// Converts a world position to the chunk internal position within the chunk that contains that world position within its bounds.
+    /// Note: if world position belongs to multiple chunks (face/edge/corner) it only returns the internal position for the first matching chunk.
     /// </summary>
-    /// <param name="internalPos">The internal position of a chunk data value.</param>
-    /// <param name="chunkPos">The position of the parent chunk in chunk coordinate system.</param>
-    /// <returns>Returns the position in world coordinate system that corresponds to the given chunk internal coordinate system position.</returns>
-    public static Vector3Int InternalPosToWorldPos(this Vector3Int internalPos, Vector3Int chunkPos)
-    {
-        Vector3Int worldPos = new Vector3Int
-        {
-            x = internalPos.x + (chunkPos.x * GameManager.Instance.ChunkSize),
-            y = internalPos.y + (chunkPos.y * GameManager.Instance.ChunkSize),
-            z = internalPos.z + (chunkPos.z * GameManager.Instance.ChunkSize)
-        };
-        return worldPos;
-    }
-
-    // World Pos To Internal Pos
+    /// <param name="worldPos">The world position in world coordinate system.</param>
+    /// <returns>Returns the chunk internal position corresponding to the given world position.</returns>
     public static Vector3Int WorldPosToInternalPos(this Vector3Int worldPos)
     {
-        Vector3Int worldPosDifference = new Vector3Int(worldPos.x / GameManager.Instance.ChunkSize, worldPos.y / GameManager.Instance.ChunkSize, worldPos.z / GameManager.Instance.ChunkSize);
+        Vector3Int internalPos = new Vector3Int(worldPos.x / GameManager.Instance.ChunkSize, worldPos.y / GameManager.Instance.ChunkSize, worldPos.z / GameManager.Instance.ChunkSize);
         if(worldPos.x < 0 && worldPos.x % GameManager.Instance.ChunkSize < 0)
         {
-            worldPosDifference.x -= 1;
+            internalPos.x -= 1;
         }
-        worldPosDifference.x *= GameManager.Instance.ChunkSize;
+        internalPos.x *= GameManager.Instance.ChunkSize;
         if(worldPos.y < 0 && worldPos.y % GameManager.Instance.ChunkSize < 0)
         {
-            worldPosDifference.y -= 1;
+            internalPos.y -= 1;
         }
-        worldPosDifference.y *= GameManager.Instance.ChunkSize;
+        internalPos.y *= GameManager.Instance.ChunkSize;
         if(worldPos.z < 0 && worldPos.z % GameManager.Instance.ChunkSize < 0)
         {
-            worldPosDifference.z -= 1;
+            internalPos.z -= 1;
         }
-        worldPosDifference.z *= GameManager.Instance.ChunkSize;
-        Vector3Int internalPos = new Vector3Int
+        internalPos.z *= GameManager.Instance.ChunkSize;
+        internalPos = new Vector3Int
         {
-            x = worldPos.x - worldPosDifference.x,
-            y = worldPos.y - worldPosDifference.y,
-            z = worldPos.z - worldPosDifference.z
+            x = worldPos.x - internalPos.x,
+            y = worldPos.y - internalPos.y,
+            z = worldPos.z - internalPos.z
         };
         return internalPos;
     }

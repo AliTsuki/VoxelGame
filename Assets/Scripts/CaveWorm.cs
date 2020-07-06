@@ -18,7 +18,13 @@ public class CaveWorm
         /// </summary>
         public struct Point
         {
+            /// <summary>
+            /// The position of this point in world coordinate system.
+            /// </summary>
             public Vector3Int WorldPosition;
+            /// <summary>
+            /// The value of this data point.
+            /// </summary>
             public float Value;
 
             /// <summary>
@@ -52,7 +58,6 @@ public class CaveWorm
         }
     }
 
-
     /// <summary>
     /// List of all the segments contained in this cave worm.
     /// </summary>
@@ -63,7 +68,8 @@ public class CaveWorm
     public int Radius;
 
     /// <summary>
-    /// Creates a new Cave Worm with the head at the given position and radius as given. Immediately runs the GenerateNodes() method and fills its list of nodes.
+    /// Creates a new Cave Worm with the head at the given position and radius as given.
+    /// Immediately runs the Generate Segments method and fills its list of segments with points.
     /// </summary>
     /// <param name="position">The position in world coordinate system representing the start of the worm.</param>
     /// <param name="radius">The radius in world coordinate system representing the size of the cave's walls from the center of each node.</param>
@@ -76,16 +82,16 @@ public class CaveWorm
     }
 
     /// <summary>
-    /// Generates all nodes for this worm. It works by looping through the maximum number of possible nodes,
-    /// breaking out if the next node is more than the max distance in MaxWormChunkDistance. For each node it 
+    /// Generates all segments for this worm. It works by looping through the maximum number of possible segments,
+    /// breaking out if the next segment is more than the max distance in MaxWormChunkDistance. For each segment it 
     /// samples 3 different locations of the noise generator and uses that as a normalized vector3 representing
-    /// the direction between the current node and the next node, it then places the next node in that direction
-    /// at radius amount of positions away from the current node.
+    /// the direction between the current segment and the next segment, it then places the next segment in that direction
+    /// at radius amount of positions away from the current segment.
     /// </summary>
     public void GenerateSegments()
     {
         int dirOffset = -1000;
-        for(int currentSegment = 0; currentSegment < GameManager.Instance.MaxWormNodes - 1; currentSegment++)
+        for(int currentSegment = 0; currentSegment < GameManager.Instance.MaxWormSegments - 1; currentSegment++)
         {
             float dirX = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Segments[currentSegment].WorldPosition.x + (dirOffset * 1), this.Segments[currentSegment].WorldPosition.y + (dirOffset * 1), this.Segments[currentSegment].WorldPosition.z + (dirOffset * 1));
             float dirY = GameManager.Instance.CaveWormDirectionNoiseGenerator.GetNoise(this.Segments[currentSegment].WorldPosition.x + (dirOffset * 2), this.Segments[currentSegment].WorldPosition.y + (dirOffset * 2), this.Segments[currentSegment].WorldPosition.z + (dirOffset * 2));
@@ -94,7 +100,6 @@ public class CaveWorm
             Vector3Int newSegmentPos = (this.Segments[currentSegment].WorldPosition + (newWormDir * this.Radius)).RoundToInt();
             if(Vector3.Distance(this.Segments[0].WorldPosition, newSegmentPos) < GameManager.Instance.MaxWormChunkDistance * GameManager.Instance.ChunkSize)
             {
-
                 this.Segments.Add(new Segment(newSegmentPos));
             }
             else
@@ -112,11 +117,10 @@ public class CaveWorm
                     {
                         Vector3Int nextWorldPos = new Vector3Int(x, y, z);
                         float distance = Vector3Int.Distance(segment.WorldPosition, nextWorldPos);
-                        if(distance <= this.Radius && World.IsInBoundsOfWormArray(nextWorldPos) == true)
+                        if(distance <= this.Radius)
                         {
                             float value = Mathf.SmoothStep(GameManager.Instance.CaveWormCarveValue, 0f, distance / this.Radius);
-                            // TODO: these indexes are out of bounds of the array
-                            World.WormArray[nextWorldPos.x, nextWorldPos.y, nextWorldPos.z] = value;
+                            segment.Points.Add(new Segment.Point(nextWorldPos, value));
                         }
                     }
                 }

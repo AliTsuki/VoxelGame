@@ -330,16 +330,16 @@ MonoBehaviour:
   ChunkSize: 16
   StartingChunkArea: 4
   TerrainSurfaceCutoff: 0.5
-  SmoothTerrain: 0
+  SmoothTerrain: 1
   Seed: 0
   NoiseType: 3
   NoiseInterpolation: 0
   FractalType: 0
-  Frequency: 0.009
-  Octaves: 4
-  Lacunarity: 4
-  Persistence: 0.2
-  Multiplier: 1
+  RoomFrequency: 0.015
+  RoomOctaves: 4
+  RoomLacunarity: 4
+  RoomPersistence: 0.3
+  RoomMultiplier: 1.5
   ShouldCarveWorms: 1
   CaveWormPositionNoiseType: 7
   CaveWormPositionNoiseInterpolation: 0
@@ -350,7 +350,7 @@ MonoBehaviour:
   MinimumCaveWorms: 1
   MaximumCaveWorms: 2
   MaxWormChunkDistance: 3
-  MaxWormNodes: 50
+  MaxWormSegments: 50
   CaveWormRadius: 3
   CaveWormCarveValue: 1
 --- !u!4 &859644680
