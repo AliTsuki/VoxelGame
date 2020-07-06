@@ -9,6 +9,46 @@ using UnityEngine;
 /// </summary>
 public class Chunk
 {
+	/// <summary>
+	/// Class containing value field and block array data for a chunk.
+	/// </summary>
+	public class ChunkData
+    {
+		/// <summary>
+		/// Class containing block data for a single block within a chunk.
+		/// </summary>
+		public struct Block
+        {
+			/// <summary>
+			/// Is this block solid or air?
+			/// </summary>
+			public bool IsSolid;
+			/// <summary>
+			/// The type of block.
+			/// </summary>
+			public int BlockType;
+		}
+
+		/// <summary>
+		/// Array of values used to generate a mesh at the cutoff boundary.
+		/// </summary>
+		public float[,,] Values;
+		/// <summary>
+		/// Array of blocks within this chunk.
+		/// </summary>
+		public Block[,,] Blocks;
+
+		/// <summary>
+		/// Creates a new chunk data object by initializing the Values and Blocks arrays.
+		/// </summary>
+		public ChunkData()
+        {
+			// The size of the chunk data is 1 larger than the chunk size because the marching cubes sample the corners of each cube.
+			this.Values = new float[GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1];
+			this.Blocks = new Block[GameManager.Instance.ChunkSize, GameManager.Instance.ChunkSize, GameManager.Instance.ChunkSize];
+        }
+    }
+
 	[Flags]
 	public enum Neighbors
     {
@@ -31,15 +71,15 @@ public class Chunk
 	/// <summary>
 	/// The position of this chunk in chunk coordinate system.
 	/// </summary>
-	public Vector3Int ChunkPos;
+	public Vector3Int ChunkPos { get; private set; }
 	/// <summary>
 	/// The values of each point in the chunk.
 	/// </summary>
-	private float[,,] chunkData;
+	private ChunkData chunkData = new ChunkData();
 	/// <summary>
 	/// List of all the cave worms that started in this chunk.
 	/// </summary>
-	public List<CaveWorm> CaveWorms = new List<CaveWorm>();
+	public List<CaveWorm> CaveWorms { get; private set; } = new List<CaveWorm>();
 
 	// Mesh Data
 	/// <summary>
@@ -50,24 +90,28 @@ public class Chunk
 	/// List of all triangle vertex indices for the chunk mesh.
 	/// </summary>
 	private readonly List<int> triangles = new List<int>();
+	/// <summary>
+	/// List of all uv indices for the chunk mesh.
+	/// </summary>
+	private readonly List<Vector2> uvs = new List<Vector2>();
 
 	// Flags
 	/// <summary>
 	/// Should this chunk generate chunk data or just cave worms for neighboring chunks.
 	/// </summary>
-	public bool ShouldGenerateChunkData = false;
+	public bool ShouldGenerateChunkData { get; private set; } = false;
 	/// <summary>
 	/// Has this chunk generated cave worms.
 	/// </summary>
-	public bool HasGeneratedCaveWorms = false;
+	public bool HasGeneratedCaveWorms { get; private set; } = false;
 	/// <summary>
 	/// Has this chunk generated chunk data.
 	/// </summary>
-	public bool HasGeneratedChunkData = false;
+	public bool HasGeneratedChunkData { get; private set; } = false;
 	/// <summary>
 	/// Has this chunk generated a mesh.
 	/// </summary>
-	public bool HasGeneratedMesh = false;
+	public bool HasGeneratedMesh { get; private set; } = false;
 
 
 	/// <summary>
@@ -107,8 +151,6 @@ public class Chunk
 	/// </summary>
 	public void GenerateChunkData()
 	{
-		// The size of the chunk data is 1 larger than the chunk size because the marching cubes sample the corners of each cube.
-		this.chunkData = new float[GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1, GameManager.Instance.ChunkSize + 1];
 		for(int x = 0; x <= GameManager.Instance.ChunkSize; x++)
 		{
 			for(int z = 0; z <= GameManager.Instance.ChunkSize; z++)
@@ -117,7 +159,19 @@ public class Chunk
 				{
 					Vector3Int worldPos = new Vector3Int(x, y, z).InternalPosToWorldPos(this.ChunkPos);
 					float value = GameManager.Instance.NoiseGenerator.GetNoise(worldPos.x, worldPos.y, worldPos.z) * GameManager.Instance.RoomMultiplier;
-					this.chunkData[x, y, z] = value;
+					this.chunkData.Values[x, y, z] = value;
+				}
+			}
+		}
+		for(int x = 0; x < GameManager.Instance.ChunkSize; x++)
+		{
+			for(int z = 0; z < GameManager.Instance.ChunkSize; z++)
+			{
+				for(int y = 0; y < GameManager.Instance.ChunkSize; y++)
+				{
+					Vector3Int worldPos = new Vector3Int(x, y, z).InternalPosToWorldPos(this.ChunkPos);
+					int value = (GameManager.Instance.OreNoiseGenerator.GetNoise(worldPos.x, worldPos.y, worldPos.z) > GameManager.Instance.OreCutoff) ? 1 : 0;
+					this.chunkData.Blocks[x, y, z].BlockType = value;
 				}
 			}
 		}
@@ -129,9 +183,9 @@ public class Chunk
 	/// </summary>
 	/// <param name="internalPos">The position you wish to sample in chunk internal coordinate system.</param>
 	/// <returns>Returns the floating point value of that position from the 3D float field of chunk data.</returns>
-	public float GetChunkData(Vector3Int internalPos)
+	public float GetChunkDataValue(Vector3Int internalPos)
 	{
-		return this.chunkData[internalPos.x, internalPos.y, internalPos.z];
+		return this.chunkData.Values[internalPos.x, internalPos.y, internalPos.z];
 	}
 
 	/// <summary>
@@ -140,13 +194,33 @@ public class Chunk
 	/// <param name="internalPos">The position you wish to modify in chunk internal coordinate system.</param>
 	/// <param name="value">The amount you wish to add to the value at the given position in the 3D float field of chunk data.</param>
 	/// <param name="notifyNeighbors">Should chunk neighbors be notified of this change?</param>
-	public void SetChunkData(Vector3Int internalPos, float value, bool notifyNeighbors)
+	public void SetChunkDataValue(Vector3Int internalPos, float value, bool notifyNeighbors)
 	{
-		this.chunkData[internalPos.x, internalPos.y, internalPos.z] += value;
+		this.chunkData.Values[internalPos.x, internalPos.y, internalPos.z] += value;
 		if(notifyNeighbors == true)
         {
 			this.NotifyNeighbors(internalPos, value);
 		}
+	}
+
+	/// <summary>
+	/// Gets the block type at the given position in chunk internal coordinate system.
+	/// </summary>
+	/// <param name="internalPos">The position in chunk internal coordinate system.</param>
+	/// <returns>Returns the block type at that position.</returns>
+	public int GetChunkDataBlockType(Vector3Int internalPos)
+    {
+		return this.chunkData.Blocks[internalPos.x, internalPos.y, internalPos.z].BlockType;
+    }
+
+	/// <summary>
+	/// Sets the block type at the given position in chunk internal coordinate system.
+	/// </summary>
+	/// <param name="internalPos">The position in chunk internal coordinate system.</param>
+	/// <param name="blockType">The block type to set at the given position.</param>
+	public void SetChunkDataBlockType(Vector3Int internalPos, int blockType)
+	{
+		this.chunkData.Blocks[internalPos.x, internalPos.y, internalPos.z].BlockType = blockType;
 	}
 
 	/// <summary>
@@ -234,7 +308,7 @@ public class Chunk
 				}
 				if(World.GetChunk(newChunkPos, out Chunk chunk) == true && chunk.HasGeneratedChunkData == true)
 				{
-					chunk.SetChunkData(newInternalPos, value, false);
+					chunk.SetChunkDataValue(newInternalPos, value, false);
 				}
 			}
 		}
@@ -264,6 +338,7 @@ public class Chunk
 	{
 		this.vertices.Clear();
 		this.triangles.Clear();
+		this.uvs.Clear();
 	}
 
 	/// <summary>
@@ -295,13 +370,14 @@ public class Chunk
 		float[] cube = new float[8];
 		for(int i = 0; i < 8; i++)
 		{
-			cube[i] = this.GetChunkData(internalPos + GameManager.CornerTable[i]);
+			cube[i] = this.GetChunkDataValue(internalPos + GameManager.CornerTable[i]);
 		}
 		// Get the configuration index of this cube.
 		int cubeConfigIndex = this.GetCubeConfiguration(cube);
 		// If the configuration of this cube is 0 or 255 (completely inside the terrain or completely outside of it) we don't need to do anything.
 		if(cubeConfigIndex == 0 || cubeConfigIndex == 255)
         {
+			// TODO: if index == 255 set block at internalPos to not solid
             return;
         }
         // Loop through the triangles. There are never more than 5 triangles to a cube and only three vertices to a triangle.
@@ -348,6 +424,7 @@ public class Chunk
                 // Add to our vertices and triangles list and incremement the edgeIndex.
                 this.vertices.Add(vertPosition);
                 this.triangles.Add(this.vertices.Count - 1);
+				this.uvs.Add(this.GetUVsForBlockType(internalPos));
 				edgeIndex++;
 			}
 		}
@@ -374,16 +451,36 @@ public class Chunk
 	}
 
 	/// <summary>
+	/// Gets the uv coordinates representing the block type at the given internal position.
+	/// </summary>
+	/// <param name="internalPos">The position in internal chunk coordinate system.</param>
+	/// <returns>Returns a Vector2 representing the UV coordinates that match the block type at the given position.</returns>
+	private Vector2 GetUVsForBlockType(Vector3Int internalPos)
+    {
+		int blockType = this.GetChunkDataBlockType(internalPos);
+		if(blockType == 0)
+        {
+			return new Vector2(0.125f, 0.875f);
+        }
+		else
+        {
+			return new Vector2(0.875f, 0.875f);
+		}
+    }
+
+	/// <summary>
 	/// Assigns the array of vertices and triangle indices to a mesh object and assign that mesh object to this GameObject's components.
 	/// </summary>
     private void AssignMesh()
     {
-        Mesh mesh = new Mesh
-        {
-            vertices = this.vertices.ToArray(),
-            triangles = this.triangles.ToArray()
+		Mesh mesh = new Mesh
+		{
+			vertices = this.vertices.ToArray(),
+			triangles = this.triangles.ToArray(),
+			uv = this.uvs.ToArray()
         };
         mesh.RecalculateNormals();
+		mesh.Optimize();
         this.meshFilter.mesh = mesh;
 		this.meshCollider.sharedMesh = mesh;
 		this.HasGeneratedMesh = true;

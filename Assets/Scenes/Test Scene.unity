@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 1.6660168, g: 1.6660168, b: 1.6660168, a: 1}
+  m_IndirectSpecularColor: {r: 0.21437278, g: 0.21437278, b: 0.21437278, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -328,7 +328,7 @@ MonoBehaviour:
   ChunkParentGO: {fileID: 2127720670}
   ChunkMaterial: {fileID: 2100000, guid: e4bf7dc95b052a24c821d206d0bb6784, type: 2}
   ChunkSize: 16
-  StartingChunkArea: 4
+  StartingChunkArea: 5
   TerrainSurfaceCutoff: 0.5
   SmoothTerrain: 1
   Seed: 0
@@ -353,6 +353,10 @@ MonoBehaviour:
   MaxWormSegments: 50
   CaveWormRadius: 3
   CaveWormCarveValue: 1
+  OreNoiseType: 2
+  OreNoiseInterpolation: 0
+  OreFrequency: 0.1
+  OreCutoff: 0.5
 --- !u!4 &859644680
 Transform:
   m_ObjectHideFlags: 0
@@ -647,7 +651,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 4294967295
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1253828716
 Transform:
   m_ObjectHideFlags: 0

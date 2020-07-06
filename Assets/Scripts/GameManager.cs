@@ -25,7 +25,7 @@ public class GameManager : MonoBehaviour
 	/// <summary>
 	/// Table representing all the corners of a cube.
 	/// </summary>
-	public static Vector3Int[] CornerTable = new Vector3Int[8]
+	public static Vector3Int[] CornerTable { get; private set; } = new Vector3Int[8]
 	{
 		new Vector3Int(0, 0, 0),
 		new Vector3Int(1, 0, 0),
@@ -40,14 +40,14 @@ public class GameManager : MonoBehaviour
 	/// <summary>
 	/// Table representing all the edges of a cube by the 2 corners that make up that edge, references the indexes of corners as denoted in Corner Table.
 	/// </summary>
-	public static int[,] EdgeIndexes = new int[12, 2]
+	public static int[,] EdgeIndexes { get; private set; } = new int[12, 2]
 	{
 		{0, 1}, {1, 2}, {3, 2}, {0, 3}, {4, 5}, {5, 6}, {7, 6}, {4, 7}, {0, 4}, {1, 5}, {2, 6}, {3, 7}
 	};
 	/// <summary>
 	/// Table representing all the vertex/triangle combinations possible for each marching cube configuration.
 	/// </summary>
-	public static int[,] TriangleTable = new int[,]
+	public static int[,] TriangleTable { get; private set; } = new int[,]
 	{
 		{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 		{0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -374,6 +374,12 @@ public class GameManager : MonoBehaviour
 	/// The amount of value to add at each point in each segment of each cave worm.
 	/// </summary>
 	public float CaveWormCarveValue = 1f;
+	// Ore Noise Generator
+	public FastNoise OreNoiseGenerator;
+	public FastNoise.NoiseType OreNoiseType = FastNoise.NoiseType.Perlin;
+	public FastNoise.Interp OreNoiseInterpolation = FastNoise.Interp.Linear;
+	public float OreFrequency = 0.1f;
+	public float OreCutoff = 0.9f;
 
 	/// <summary>
 	/// Has this world been generated at least one time?
@@ -441,5 +447,10 @@ public class GameManager : MonoBehaviour
 		this.CaveWormDirectionNoiseGenerator.SetNoiseType(this.CaveWormDirectionNoiseType);
 		this.CaveWormDirectionNoiseGenerator.SetInterp(this.CaveWormDirectionNoiseInterpolation);
 		this.CaveWormDirectionNoiseGenerator.SetFrequency(this.CaveWormDirectionFrequency);
+		// Ore
+		this.OreNoiseGenerator = new FastNoise(this.Seed);
+		this.OreNoiseGenerator.SetNoiseType(this.OreNoiseType);
+		this.OreNoiseGenerator.SetInterp(this.OreNoiseInterpolation);
+		this.OreNoiseGenerator.SetFrequency(this.OreFrequency);
 	}
 }

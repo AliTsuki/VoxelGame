@@ -11,7 +11,7 @@ public static class World
     /// <summary>
     /// Dictionary of every chunk that exists in the game world.
     /// </summary>
-    public static Dictionary<Vector3Int, Chunk> Chunks = new Dictionary<Vector3Int, Chunk>();
+    private readonly static Dictionary<Vector3Int, Chunk> chunks = new Dictionary<Vector3Int, Chunk>();
 
 
     // Awake is called when the script instance is being loaded.
@@ -55,9 +55,9 @@ public static class World
     /// <returns>Returns true if a chunk exists at the given position.</returns>
     public static bool GetChunk(Vector3Int chunkPos, out Chunk chunk)
     {
-        if(Chunks.ContainsKey(chunkPos))
+        if(chunks.ContainsKey(chunkPos))
         {
-            chunk = Chunks[chunkPos];
+            chunk = chunks[chunkPos];
             return true;
         }
         else
@@ -72,11 +72,11 @@ public static class World
     /// </summary>
     private static void RemoveAllChunks()
     {
-        foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
+        foreach(KeyValuePair<Vector3Int, Chunk> chunk in chunks)
         {
             GameObject.Destroy(chunk.Value.ChunkGO);
         }
-        Chunks.Clear();
+        chunks.Clear();
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public static class World
                 for(int z = 0; z < GameManager.Instance.StartingChunkArea; z++)
                 {
                     Vector3Int newChunkPos = new Vector3Int(x, y, z);
-                    Chunks.Add(newChunkPos, new Chunk(newChunkPos, true));
+                    chunks.Add(newChunkPos, new Chunk(newChunkPos, true));
                 }
             }
         }
@@ -109,7 +109,7 @@ public static class World
             // Loop through all starting chunks and check a cube of max worm distance away for uninstantiated chunks and add them to a list for instantiation with generate flag set to false.
             Debug.Log("Generating Cave Worms for Starting Chunks...");
             List<Chunk> chunksToAdd = new List<Chunk>();
-            foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
+            foreach(KeyValuePair<Vector3Int, Chunk> chunk in chunks)
             {
                 chunk.Value.GenerateCaveWorms();
                 for(int x = chunk.Key.x - GameManager.Instance.MaxWormChunkDistance; x < chunk.Key.x + GameManager.Instance.MaxWormChunkDistance; x++)
@@ -119,7 +119,7 @@ public static class World
                         for(int z = chunk.Key.z - GameManager.Instance.MaxWormChunkDistance; z < chunk.Key.z + GameManager.Instance.MaxWormChunkDistance; z++)
                         {
                             Vector3Int newPos = new Vector3Int(x, y, z);
-                            if(Chunks.ContainsKey(newPos) == false)
+                            if(chunks.ContainsKey(newPos) == false)
                             {
                                 Chunk wormOnlyChunk = new Chunk(newPos, false);
                                 wormOnlyChunk.GenerateCaveWorms();
@@ -132,9 +132,9 @@ public static class World
             // Loop through all worm only chunks and add them to chunk dictionary.
             foreach(Chunk chunk in chunksToAdd)
             {
-                if(Chunks.ContainsKey(chunk.ChunkPos) == false)
+                if(chunks.ContainsKey(chunk.ChunkPos) == false)
                 {
-                    Chunks.Add(chunk.ChunkPos, chunk);
+                    chunks.Add(chunk.ChunkPos, chunk);
                 }
             }
             Debug.Log("Successfully Generated Cave Worms for Starting Chunks!");
@@ -142,7 +142,7 @@ public static class World
         //------------------------------------------------------------------------------------------
         // Loop through all chunks and generate chunk data for ones flagged for such.
         Debug.Log("Generating Chunk Data for Starting Chunks...");
-        foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
+        foreach(KeyValuePair<Vector3Int, Chunk> chunk in chunks)
         {
             if(chunk.Value.ShouldGenerateChunkData == true)
             {
@@ -155,7 +155,7 @@ public static class World
         {        
             // Loop through all chunks and carve cave worms.
             Debug.Log("Carving Cave Worms for Starting Chunks...");
-            foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
+            foreach(KeyValuePair<Vector3Int, Chunk> chunk in chunks)
             {
                 foreach(CaveWorm worm in chunk.Value.CaveWorms)
                 {
@@ -165,7 +165,7 @@ public static class World
                         {
                             if(GetChunk(point.WorldPosition.WorldPosToChunkPos(), out Chunk chunkOfPoint) == true && chunkOfPoint.HasGeneratedChunkData == true)
                             {
-                                chunkOfPoint.SetChunkData(point.WorldPosition.WorldPosToInternalPos(), point.Value, true);
+                                chunkOfPoint.SetChunkDataValue(point.WorldPosition.WorldPosToInternalPos(), point.Value, true);
                             }
                         }
                     }
@@ -176,7 +176,7 @@ public static class World
         //------------------------------------------------------------------------------------------
         // Loop through all chunks and generate meshes for ones with chunk data.
         Debug.Log("Generating GameObjects and Meshes for Starting Chunks...");
-        foreach(KeyValuePair<Vector3Int, Chunk> chunk in Chunks)
+        foreach(KeyValuePair<Vector3Int, Chunk> chunk in chunks)
         {
             if(chunk.Value.HasGeneratedChunkData == true)
             {

@@ -21,11 +21,11 @@ public class CaveWorm
             /// <summary>
             /// The position of this point in world coordinate system.
             /// </summary>
-            public Vector3Int WorldPosition;
+            public Vector3Int WorldPosition { get; private set; }
             /// <summary>
             /// The value of this data point.
             /// </summary>
-            public float Value;
+            public float Value { get; private set; }
 
             /// <summary>
             /// Creates a new point using given position and value.
@@ -42,11 +42,11 @@ public class CaveWorm
         /// <summary>
         /// The position of this Segment's center node in world coordinate system.
         /// </summary>
-        public Vector3Int WorldPosition;
+        public Vector3Int WorldPosition { get; private set; }
         /// <summary>
         /// List of all points contained in this segment.
         /// </summary>
-        public List<Point> Points = new List<Point>();
+        public List<Point> Points { get; private set; } = new List<Point>();
 
         /// <summary>
         /// Creates a new segment with the given position in world coordinate system as its center node.
@@ -61,11 +61,11 @@ public class CaveWorm
     /// <summary>
     /// List of all the segments contained in this cave worm.
     /// </summary>
-    public List<Segment> Segments = new List<Segment>();
+    public List<Segment> Segments { get; private set; } = new List<Segment>();
     /// <summary>
     /// The radius measured in world coordinate system that represents how wide the cave should be around each node.
     /// </summary>
-    public int Radius;
+    public int Radius { get; private set; }
 
     /// <summary>
     /// Creates a new Cave Worm with the head at the given position and radius as given.

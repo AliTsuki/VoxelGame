@@ -66,6 +66,13 @@ public class GameManagerEditor : Editor
 		this.gm.MaxWormSegments = EditorGUILayout.IntField("Maximum Worm Segments:", this.gm.MaxWormSegments);
 		this.gm.CaveWormRadius = EditorGUILayout.IntField("Cave Worm Radius:", this.gm.CaveWormRadius);
 		this.gm.CaveWormCarveValue = EditorGUILayout.FloatField("Cave Worm Carve Value:", this.gm.CaveWormCarveValue);
+		// Ore Settings
+		EditorGUILayout.Space();
+		EditorGUILayout.LabelField("Ore Noise Settings", BoldCenteredStyle);
+		this.gm.OreNoiseType = (FastNoise.NoiseType)EditorGUILayout.EnumPopup("Ore Noise Type:", this.gm.OreNoiseType);
+		this.gm.OreNoiseInterpolation = (FastNoise.Interp)EditorGUILayout.EnumPopup("Ore Noise Interpolation:", this.gm.OreNoiseInterpolation);
+		this.gm.OreFrequency = EditorGUILayout.FloatField("Ore Frequency:", this.gm.OreFrequency);
+		this.gm.OreCutoff = EditorGUILayout.FloatField("Ore Cutoff:", this.gm.OreCutoff);
 		// Regenerate Button
 		EditorGUILayout.Space();
 		if(GUILayout.Button("Regenerate Starting Chunks"))
